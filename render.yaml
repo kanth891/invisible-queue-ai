@@ -1,11 +1,10 @@
 # ──────────────────────────────────────────────────
-# Render.com — Backend Service Configuration
-# ──────────────────────────────────────────────────
-# This file helps Render auto-detect settings.
-# Actual deployment is configured via Render Dashboard.
+# Invisible Queue AI — Render.com Deployment
+# Both frontend (static) and backend (web service)
 # ──────────────────────────────────────────────────
 
 services:
+  # ── Backend API (Node.js Web Service) ────────────
   - type: web
     name: invisible-queue-ai-api
     runtime: node
@@ -13,15 +12,35 @@ services:
     rootDir: backend
     buildCommand: npm install
     startCommand: node src/app.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 5000
       - key: DATABASE_URL
-        sync: false
+        sync: false          # set manually in Render dashboard
       - key: JWT_SECRET
-        generateValue: true
+        generateValue: true  # Render auto-generates
       - key: CORS_ORIGIN
-        sync: false
+        sync: false          # set to frontend Render URL after first deploy
       - key: FRONTEND_URL
         sync: false
-    healthCheckPath: /api/health
+
+  # ── Frontend (Static Site) ────────────────────────
+  - type: static
+    name: invisible-queue-ai-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false          # set to https://invisible-queue-ai-api.onrender.com

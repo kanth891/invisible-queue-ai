@@ -7,54 +7,36 @@ on:
     branches: [main, develop]
 
 jobs:
-  # ── Backend Validation ──────────────────────────
   backend:
     name: Backend — Install & Validate
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: node --check src/app.js
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check for syntax errors
-        run: node --check src/app.js
-
-  # ── Frontend Validation ─────────────────────────
   frontend:
     name: Frontend — Install & Build
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
+      - run: npm ci
+      - run: npm run build
         env:
-          VITE_API_URL: ''
+          VITE_API_URL: 'https://invisible-queue-ai-api.onrender.com'
