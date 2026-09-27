@@ -2,7 +2,7 @@
 
 > **Smart AI-powered hospital queue management system** that eliminates physical waiting lines through invisible virtual queuing, AI-driven wait-time predictions, and real-time patient notifications — enabling patients to wait comfortably anywhere while maintaining their place in the queue.
 
-[![CI — Build & Validate](https://github.com/YOUR_USERNAME/invisible-queue-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/invisible-queue-ai/actions/workflows/ci.yml)
+[![CI — Build & Validate](https://github.com/kanth891/invisible-queue-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/kanth891/invisible-queue-ai/actions/workflows/ci.yml)
 
 ---
 
