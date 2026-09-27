@@ -58,7 +58,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/invisible-queue-ai.git
+git clone https://github.com/kanth891/invisible-queue-ai.git
 cd invisible-queue-ai
 
 # 2. Run setup script
