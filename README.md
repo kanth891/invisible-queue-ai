@@ -176,7 +176,7 @@ feature/your-feature
 | Service  | URL |
 |----------|-----|
 | Frontend | https://invisible-queue-ai-frontend.onrender.com |
-| Backend  | https://invisible-queue-ai.onrender.com |
+| Backend  | https://invisible-queue-ai-backend.onrender.com |
 
 ---
 
