@@ -1,0 +1,35 @@
+{
+  "name": "invisible-queue-ai",
+  "version": "0.1.0",
+  "description": "AI-powered smart hospital queue management system with invisible queuing, wait-time prediction, and real-time analytics",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/invisible-queue-ai.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "hospital",
+    "queue-management",
+    "ai",
+    "healthcare",
+    "invisible-queue"
+  ]
+}
