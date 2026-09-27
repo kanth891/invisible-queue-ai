@@ -1,0 +1,27 @@
+# ──────────────────────────────────────────────────
+# Render.com — Backend Service Configuration
+# ──────────────────────────────────────────────────
+# This file helps Render auto-detect settings.
+# Actual deployment is configured via Render Dashboard.
+# ──────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: invisible-queue-ai-api
+    runtime: node
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+    healthCheckPath: /api/health

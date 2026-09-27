@@ -1,0 +1,26 @@
+{
+  "name": "invisible-queue-ai-backend",
+  "version": "0.1.0",
+  "description": "Backend API for Invisible Queue AI — Express.js + PostgreSQL",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js",
+    "build": "echo 'No build step required for Node.js backend'"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
