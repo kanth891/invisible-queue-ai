@@ -1,10 +1,8 @@
-# ──────────────────────────────────────────────────
-# Invisible Queue AI — Render.com Deployment
-# Both frontend (static) and backend (web service)
-# ──────────────────────────────────────────────────
+# Invisible Queue AI — Render.com Blueprint
+# Backend (web service) + Frontend (static)
 
 services:
-  # ── Backend API (Node.js Web Service) ────────────
+  # ── Backend API ───────────────────────────────────
   - type: web
     name: invisible-queue-ai-api
     runtime: node
@@ -19,17 +17,18 @@ services:
       - key: PORT
         value: 5000
       - key: DATABASE_URL
-        sync: false          # set manually in Render dashboard
+        sync: false
       - key: JWT_SECRET
-        generateValue: true  # Render auto-generates
+        generateValue: true
       - key: CORS_ORIGIN
-        sync: false          # set to frontend Render URL after first deploy
+        sync: false
       - key: FRONTEND_URL
         sync: false
 
-  # ── Frontend (Static Site) ────────────────────────
-  - type: static
+  # ── Frontend Static Site ──────────────────────────
+  - type: web
     name: invisible-queue-ai-frontend
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -43,4 +42,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        sync: false          # set to https://invisible-queue-ai-api.onrender.com
+        sync: false
