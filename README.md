@@ -4,6 +4,8 @@
 
 [![CI — Build & Validate](https://github.com/kanth891/invisible-queue-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/kanth891/invisible-queue-ai/actions/workflows/ci.yml)
 
+**B.Tech CSE Final Year Project**
+
 ---
 
 ## 🏗️ Architecture
@@ -11,8 +13,8 @@
 ```
 ┌──────────────────────────────────────────────┐
 │                  Client                       │
-│              React (Vite)                     │
-│          Deployed on Vercel                   │
+│              React.js (Vite)                  │
+│          Deployed on Render                   │
 └──────────────────┬───────────────────────────┘
                    │ HTTPS
                    ▼
@@ -25,7 +27,7 @@
            ▼                   ▼
 ┌──────────────────┐  ┌────────────────────────┐
 │   PostgreSQL     │  │  ML Service (Phase 3)  │
-│   (Supabase)     │  │  Python + FastAPI      │
+│   (Supabase)     │  │  Python + FastAPI       │
 └──────────────────┘  └────────────────────────┘
 ```
 
@@ -37,9 +39,8 @@
 | Backend     | Node.js + Express.js      |
 | Database    | PostgreSQL (Supabase)     |
 | ML Service  | Python + FastAPI (Phase 3)|
-| Real-Time   | Socket.IO (Phase 4)      |
-| Frontend CD | Vercel                    |
-| Backend CD  | Render                    |
+| Real-Time   | Socket.IO (Phase 4)       |
+| Deployment  | Render (Frontend + Backend)|
 | CI/CD       | GitHub Actions            |
 | Containers  | Docker + Docker Compose   |
 
@@ -148,16 +149,17 @@ feature/your-feature
 
 ## 🌐 Deployment
 
-### Frontend → Vercel
+### Frontend → Render (Static Site)
 
 - **Auto-deploys** from `main` branch
-- **Configuration**: `frontend/vercel.json`
-- **Environment Variable**: Set `VITE_API_URL` to your Render backend URL
+- **Root Directory**: `frontend`
+- **Build Command**: `npm install && npm run build`
+- **Publish Directory**: `dist`
+- **Environment Variable**: `VITE_API_URL` → Backend URL
 
-### Backend → Render
+### Backend → Render (Web Service)
 
 - **Auto-deploys** from `main` branch
-- **Configuration**: `render.yaml`
 - **Root Directory**: `backend`
 - **Build Command**: `npm install`
 - **Start Command**: `node src/app.js`
@@ -168,6 +170,13 @@ feature/your-feature
 
 - **Cloud PostgreSQL** — no self-hosting required
 - **Connection**: via `DATABASE_URL` environment variable
+
+### Production URLs
+
+| Service  | URL |
+|----------|-----|
+| Frontend | https://invisible-queue-ai-frontend.onrender.com |
+| Backend  | https://invisible-queue-ai.onrender.com |
 
 ---
 
@@ -202,24 +211,29 @@ feature/your-feature
 invisible-queue-ai/
 ├── frontend/                # React.js (Vite) frontend
 │   ├── src/
-│   ├── public/
+│   │   ├── App.jsx         # Main application component
+│   │   ├── App.css         # Component styles
+│   │   ├── index.css       # Global styles & design tokens
+│   │   └── main.jsx        # React entry point
+│   ├── public/             # Static assets
 │   ├── Dockerfile
-│   ├── vercel.json
 │   └── package.json
 │
 ├── backend/                 # Express.js backend API
 │   ├── src/
-│   │   ├── config/          # Environment configuration
-│   │   ├── controllers/     # Route handlers
-│   │   ├── db/              # Database connection
-│   │   ├── middleware/       # Express middleware
-│   │   ├── routes/          # API routes
-│   │   └── services/        # Business logic
-│   │   └── app.js           # Application entry point
+│   │   ├── app.js          # Application entry point
+│   │   ├── config/         # Environment configuration
+│   │   ├── controllers/    # Route handlers
+│   │   ├── db/             # Database connection
+│   │   ├── middleware/     # Express middleware
+│   │   ├── routes/         # API routes
+│   │   └── services/       # Business logic
 │   ├── Dockerfile
 │   └── package.json
 │
 ├── ml-service/              # Python ML service (Phase 3)
+│   ├── README.md
+│   └── requirements.txt
 │
 ├── docs/                    # Project documentation
 ├── scripts/                 # Helper scripts
@@ -227,7 +241,6 @@ invisible-queue-ai/
 ├── .github/workflows/       # CI/CD pipelines
 ├── .env.example             # Environment variables template
 ├── docker-compose.yml       # Local Docker setup
-├── render.yaml              # Render deployment config
 └── README.md
 ```
 
@@ -239,4 +252,4 @@ MIT
 
 ---
 
-*Built as a B.Tech CSE Final Year Project*
+*Built as a B.Tech CSE Final Year Project — 2026*

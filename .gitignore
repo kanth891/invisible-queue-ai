@@ -13,6 +13,7 @@ node_modules/
 dist/
 build/
 coverage/
+.nyc_output/
 
 # Logs
 *.log
@@ -42,9 +43,8 @@ venv/
 # Docker
 .docker/
 
-# Testing
-coverage/
-.nyc_output/
+# Deployment
+.vercel/
 
 # Misc
 *.tgz
