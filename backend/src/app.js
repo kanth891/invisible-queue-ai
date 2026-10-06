@@ -1,10 +1,20 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import pool, { testConnection } from './db/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { authenticate } from './middleware/auth.js';
+
+// ── Route imports ──────────────────────────────────
+import authRoutes from './routes/auth.js';
+import departmentRoutes from './routes/departments.js';
+import doctorRoutes from './routes/doctors.js';
+import patientRoutes from './routes/patients.js';
+import queueRoutes from './routes/queue.js';
+import userRoutes from './routes/users.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,9 +44,17 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', version: '0.1.0' }));
+app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', version: '1.0.0' }));
 
-// Phase 1+ routes will be mounted here: app.use('/api', routes)
+// ── Public routes ─────────────────────────────────
+app.use('/api/auth', authRoutes);
+
+// ── Protected routes ──────────────────────────────
+app.use('/api/departments', authenticate, departmentRoutes);
+app.use('/api/doctors', authenticate, doctorRoutes);
+app.use('/api/patients', authenticate, patientRoutes);
+app.use('/api/queue', authenticate, queueRoutes);
+app.use('/api/users', authenticate, userRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
