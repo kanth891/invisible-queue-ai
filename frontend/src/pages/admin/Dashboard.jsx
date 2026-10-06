@@ -48,14 +48,28 @@ export default function AdminDashboard() {
 
       {activeTab === 'overview' && stats && (
         <div>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>Today's Statistics</h3>
-          <div className="status-grid">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, color: 'var(--text-secondary)' }}>Today's Statistics</h3>
+            <span style={{
+              background: 'rgba(99, 102, 241, 0.15)',
+              color: 'var(--accent-indigo)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              padding: '0.25rem 0.75rem',
+              borderRadius: '100px',
+              fontSize: '0.75rem',
+              fontWeight: '700'
+            }}>
+              ⚡ Phase 2 Virtual Queue Active
+            </span>
+          </div>
+
+          <div className="status-grid" style={{ marginBottom: '2rem' }}>
             <StatCard label="Total Patients" value={stats.total_patients} color="var(--text-primary)" />
-            <StatCard label="Waiting" value={stats.waiting} color="var(--accent-amber)" />
-            <StatCard label="In Consultation" value={stats.in_consultation} color="var(--accent-cyan)" />
-            <StatCard label="Completed" value={stats.completed} color="var(--accent-emerald)" />
+            <StatCard label="Active Virtual Queues" value={stats.active_virtual_queues ?? 0} color="var(--accent-violet)" />
+            <StatCard label="Patients Currently Waiting" value={stats.waiting} color="var(--accent-amber)" />
+            <StatCard label="Patients Currently Consulting" value={stats.in_consultation} color="var(--accent-cyan)" />
+            <StatCard label="Patients Completed" value={stats.completed} color="var(--accent-emerald)" />
             <StatCard label="Active Doctors" value={stats.total_doctors} color="var(--accent-indigo)" />
-            <StatCard label="Active Departments" value={stats.total_departments} color="var(--accent-violet)" />
           </div>
         </div>
       )}

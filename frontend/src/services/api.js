@@ -63,6 +63,7 @@ export const queueAPI = {
   doctorQueue: (doctorId) => request(`/api/queue/doctor/${doctorId}`),
   departmentQueue: (departmentId) => request(`/api/queue/department/${departmentId}`),
   stats: () => request('/api/queue/stats'),
+  getByAccessToken: (accessToken) => request(`/api/queue/access/${encodeURIComponent(accessToken)}`),
   call: (id) => request(`/api/queue/${id}/call`, { method: 'POST' }),
   start: (id) => request(`/api/queue/${id}/start`, { method: 'POST' }),
   complete: (id) => request(`/api/queue/${id}/complete`, { method: 'POST' }),
