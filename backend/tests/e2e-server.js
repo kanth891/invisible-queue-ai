@@ -1,10 +1,13 @@
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { Server } from 'socket.io';
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = 'e2e_test_secret_key_12345';
 const APPROACHING_THRESHOLD = 2;
@@ -47,7 +50,12 @@ const db = {
       created_at: new Date(Date.now() - 3600000),
       called_at: new Date(Date.now() - 1800000),
       consultation_started_at: new Date(Date.now() - 1200000),
-      consultation_completed_at: null
+      consultation_completed_at: null,
+      actual_wait_minutes: 40.0,
+      consultation_duration_minutes: null,
+      prediction_error_minutes: null,
+      approaching_notified_at: new Date(),
+      turn_notified_at: new Date(),
     },
     {
       id: 2,
@@ -61,10 +69,257 @@ const db = {
       created_at: new Date(Date.now() - 2400000),
       called_at: null,
       consultation_started_at: null,
-      consultation_completed_at: null
+      consultation_completed_at: null,
+      actual_wait_minutes: null,
+      consultation_duration_minutes: null,
+      prediction_error_minutes: null,
+      approaching_notified_at: null,
+      turn_notified_at: null,
     }
-  ]
+  ],
+  predictions: []
 };
+
+// ── State Machine Transition Constraints ──────────
+const VALID_TRANSITIONS = {
+  WAITING:          ['CALLED', 'CANCELLED', 'NO_SHOW'],
+  CALLED:           ['IN_CONSULTATION', 'NO_SHOW'],
+  IN_CONSULTATION:  ['COMPLETED'],
+  COMPLETED:        [],
+  CANCELLED:        [],
+  NO_SHOW:          [],
+};
+
+// ── Socket.IO Server Setup ────────────────────────
+const io = new Server(server, {
+  cors: { origin: true, credentials: true },
+});
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (token) {
+    try {
+      socket.user = jwt.verify(token, JWT_SECRET);
+    } catch (e) {
+      socket.user = null;
+    }
+  } else {
+    socket.user = null;
+  }
+  next();
+});
+
+io.on('connection', (socket) => {
+  socket.on('join:patient', ({ accessToken }, ack) => {
+    if (!accessToken || accessToken.trim().length < 8) {
+      if (typeof ack === 'function') ack({ success: false, error: 'Invalid token' });
+      return;
+    }
+    const token = accessToken.trim();
+    const entry = db.queue_entries.find(q => q.queue_access_token === token);
+    if (!entry) {
+      if (typeof ack === 'function') ack({ success: false, error: 'Queue pass not found' });
+      return;
+    }
+    const room = `patient:${token}`;
+    socket.join(room);
+    if (typeof ack === 'function') ack({ success: true, room });
+  });
+
+  socket.on('join:doctor', ({ doctorId }, ack) => {
+    if (!socket.user) return ack && ack({ success: false, error: 'Unauthorized' });
+    const docId = Number(doctorId);
+    const room = `doctor:${docId}`;
+    socket.join(room);
+    if (typeof ack === 'function') ack({ success: true, room });
+  });
+
+  socket.on('join:department', ({ departmentId }, ack) => {
+    if (!socket.user) return ack && ack({ success: false, error: 'Unauthorized' });
+    const deptId = Number(departmentId);
+    const room = `department:${deptId}`;
+    socket.join(room);
+    if (typeof ack === 'function') ack({ success: true, room });
+  });
+
+  socket.on('join:admin', (data, ack) => {
+    if (!socket.user || socket.user.role !== 'ADMIN') {
+      return ack && ack({ success: false, error: 'Admin only' });
+    }
+    socket.join('admin');
+    if (typeof ack === 'function') ack({ success: true, room: 'admin' });
+  });
+});
+
+// Helper: Predict wait time via ML service or fallback
+async function computePredictionE2E(entry, activeEntries) {
+  const patientIndex = activeEntries.findIndex(e => e.id === entry.id);
+  if (patientIndex === -1) {
+    return {
+      token: entry.token_number,
+      status: entry.status,
+      patients_ahead: 0,
+      predicted_wait_minutes: 0,
+      lower_bound_minutes: 0,
+      upper_bound_minutes: 0,
+      model_version: 'v1.0',
+      message: `Status: ${entry.status}`,
+    };
+  }
+
+  const patientsAhead = patientIndex;
+  try {
+    const res = await fetch('http://127.0.0.1:8000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patients_ahead: patientsAhead,
+        queue_length: activeEntries.length,
+        token_position: patientIndex + 1,
+        hour_of_day: new Date().getHours(),
+        day_of_week: (new Date().getDay() + 6) % 7,
+        is_peak_hour: 1,
+        department_id: entry.department_id,
+        doctor_id: entry.doctor_id,
+        doctor_avg_duration: 12.0,
+        completed_today: db.queue_entries.filter(q => q.doctor_id === entry.doctor_id && q.status === 'COMPLETED').length,
+      }),
+    });
+    if (res.ok) {
+      const predData = await res.json();
+      return predData;
+    }
+  } catch (err) {
+    // Graceful fallback
+  }
+
+  // Graceful historical fallback calculation
+  const predictedWait = patientsAhead === 0 ? 2 : Math.round(patientsAhead * 12 + 2);
+  return {
+    token: entry.token_number,
+    status: entry.status,
+    patients_ahead: patientsAhead,
+    predicted_wait_minutes: predictedWait,
+    lower_bound_minutes: Math.max(1, Math.round(predictedWait * 0.8)),
+    upper_bound_minutes: Math.round(predictedWait * 1.3),
+    model_version: 'v1.0-fallback',
+    is_fallback: true,
+    message: 'Estimated wait based on queue flow',
+  };
+}
+
+// Helper: Synchronize real-time events across socket rooms
+async function syncRealtimeQueueE2E(doctorId, departmentId, triggeredEntry = null, action = null) {
+  const today = new Date().toISOString().split('T')[0];
+  const activeEntries = db.queue_entries
+    .filter(q => q.doctor_id === doctorId && q.queue_date === today && ['IN_CONSULTATION', 'CALLED', 'WAITING'].includes(q.status))
+    .sort((a, b) => {
+      const rankA = a.status === 'IN_CONSULTATION' ? 1 : a.status === 'CALLED' ? 2 : 3;
+      const rankB = b.status === 'IN_CONSULTATION' ? 1 : b.status === 'CALLED' ? 2 : 3;
+      if (rankA !== rankB) return rankA - rankB;
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+
+  const currentServing = activeEntries.find(e => e.status === 'IN_CONSULTATION') ||
+                         activeEntries.find(e => e.status === 'CALLED') || null;
+  const currentToken = currentServing ? currentServing.token_number : null;
+
+  // Direct events for triggered entry
+  if (triggeredEntry && triggeredEntry.queue_access_token) {
+    const patientRoom = `patient:${triggeredEntry.queue_access_token}`;
+    if (triggeredEntry.status === 'CALLED') {
+      if (!triggeredEntry.turn_notified_at) {
+        triggeredEntry.turn_notified_at = new Date();
+      }
+      io.to(patientRoom).emit('queue.patient_turn', {
+        token: triggeredEntry.token_number,
+        message: "It's your turn! Please proceed to the consultation room.",
+      });
+      io.to(patientRoom).emit('queue.token_called', {
+        token: triggeredEntry.token_number,
+        status: 'CALLED',
+        currentToken: triggeredEntry.token_number,
+        position: 1,
+        patientsAhead: 0,
+      });
+    } else if (triggeredEntry.status === 'IN_CONSULTATION') {
+      io.to(patientRoom).emit('queue.consultation_started', {
+        token: triggeredEntry.token_number,
+        status: 'IN_CONSULTATION',
+        currentToken: triggeredEntry.token_number,
+        message: 'Your consultation has started.',
+      });
+    } else if (triggeredEntry.status === 'COMPLETED') {
+      io.to(patientRoom).emit('queue.consultation_completed', {
+        token: triggeredEntry.token_number,
+        status: 'COMPLETED',
+        message: 'Consultation completed.',
+      });
+    } else if (triggeredEntry.status === 'NO_SHOW') {
+      io.to(patientRoom).emit('queue.patient_no_show', {
+        token: triggeredEntry.token_number,
+        status: 'NO_SHOW',
+        message: 'Marked as no-show.',
+      });
+    } else if (triggeredEntry.status === 'CANCELLED') {
+      io.to(patientRoom).emit('queue.patient_cancelled', {
+        token: triggeredEntry.token_number,
+        status: 'CANCELLED',
+        message: 'Cancelled.',
+      });
+    }
+  }
+
+  // Update all waiting entries
+  for (let i = 0; i < activeEntries.length; i++) {
+    const entry = activeEntries[i];
+    if (entry.status !== 'WAITING') continue;
+
+    const position = i + 1;
+    const patientsAhead = i;
+    const isApproaching = patientsAhead <= APPROACHING_THRESHOLD;
+
+    // Idempotent approaching notification
+    if (isApproaching && !entry.approaching_notified_at) {
+      entry.approaching_notified_at = new Date();
+      io.to(`patient:${entry.queue_access_token}`).emit('queue.patient_approaching', {
+        token: entry.token_number,
+        patientsAhead,
+        position,
+        message: `Your turn is approaching! ${patientsAhead} patient(s) ahead.`,
+      });
+      io.to(`patient:${entry.queue_access_token}`).emit('notification.created', {
+        type: 'APPROACHING',
+        token: entry.token_number,
+        patientsAhead,
+        message: `Your turn is approaching! ${patientsAhead} patient(s) ahead.`,
+      });
+    }
+
+    const prediction = await computePredictionE2E(entry, activeEntries);
+    const doctor = db.doctors.find(d => d.id === entry.doctor_id);
+    const dept = db.departments.find(d => d.id === entry.department_id);
+
+    io.to(`patient:${entry.queue_access_token}`).emit('queue.wait_time_updated', {
+      token: entry.token_number,
+      doctor: doctor?.name,
+      department: dept?.name,
+      status: entry.status,
+      currentToken,
+      position,
+      patientsAhead,
+      isApproaching,
+      approachingThreshold: APPROACHING_THRESHOLD,
+      queueDate: entry.queue_date,
+      prediction,
+    });
+  }
+
+  // Broadcast to doctor, department, admin
+  io.to(`doctor:${doctorId}`).emit('queue.updated', { doctorId, action, currentToken, activeCount: activeEntries.length });
+  io.to(`department:${departmentId}`).emit('queue.updated', { departmentId, action, currentToken });
+  io.to('admin').emit('queue.updated', { doctorId, departmentId, action, currentToken });
+}
 
 // ── Auth Middleware ──────────────────────────────
 function authMiddleware(req, res, next) {
@@ -110,8 +365,8 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
   res.json({ status: 'ok', data: { user: req.user } });
 });
 
-// ── Public Virtual Queue Route (Phase 2) ─────────
-app.get('/api/queue/access/:accessToken', (req, res) => {
+// ── Public Virtual Queue Route (Phase 2 & 3 & 4) ──
+app.get('/api/queue/access/:accessToken', async (req, res) => {
   const { accessToken } = req.params;
   if (!accessToken || accessToken.trim().length < 8) {
     return res.status(400).json({ status: 'error', message: 'Invalid queue access token format' });
@@ -125,7 +380,6 @@ app.get('/api/queue/access/:accessToken', (req, res) => {
   const doctor = db.doctors.find(d => d.id === entry.doctor_id);
   const dept = db.departments.find(d => d.id === entry.department_id);
 
-  // Active entries for doctor today
   const activeEntries = db.queue_entries
     .filter(q => q.doctor_id === entry.doctor_id && q.queue_date === entry.queue_date && ['IN_CONSULTATION', 'CALLED', 'WAITING'].includes(q.status))
     .sort((a, b) => {
@@ -144,6 +398,8 @@ app.get('/api/queue/access/:accessToken', (req, res) => {
   const patientsAhead = patientIndex !== -1 ? patientIndex : 0;
   const isApproaching = entry.status === 'WAITING' && patientsAhead <= APPROACHING_THRESHOLD;
 
+  const prediction = await computePredictionE2E(entry, activeEntries);
+
   res.json({
     status: 'ok',
     data: {
@@ -156,19 +412,25 @@ app.get('/api/queue/access/:accessToken', (req, res) => {
       patientsAhead,
       isApproaching,
       approachingThreshold: APPROACHING_THRESHOLD,
-      queueDate: entry.queue_date
+      queueDate: entry.queue_date,
+      prediction,
     }
   });
 });
 
-// ── Departments & Doctors ─────────────────────────
-app.get('/api/departments', (req, res) => {
-  res.json({ status: 'ok', data: db.departments });
+app.get('/api/queue/access/:accessToken/prediction', async (req, res) => {
+  const { accessToken } = req.params;
+  const entry = db.queue_entries.find(q => q.queue_access_token === accessToken.trim());
+  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+  const activeEntries = db.queue_entries.filter(q => q.doctor_id === entry.doctor_id && q.queue_date === entry.queue_date && ['IN_CONSULTATION', 'CALLED', 'WAITING'].includes(q.status));
+  const prediction = await computePredictionE2E(entry, activeEntries);
+  res.json({ status: 'ok', data: prediction });
 });
 
-app.get('/api/doctors', (req, res) => {
-  res.json({ status: 'ok', data: db.doctors });
-});
+// ── Departments & Doctors ─────────────────────────
+app.get('/api/departments', (req, res) => res.json({ status: 'ok', data: db.departments }));
+app.get('/api/doctors', (req, res) => res.json({ status: 'ok', data: db.doctors }));
+app.get('/api/users', authMiddleware, (req, res) => res.json({ status: 'ok', data: db.users }));
 
 // ── Patients ──────────────────────────────────────
 app.post('/api/patients', authMiddleware, (req, res) => {
@@ -179,7 +441,7 @@ app.post('/api/patients', authMiddleware, (req, res) => {
 });
 
 // ── Queue Management ──────────────────────────────
-app.post('/api/queue/token', authMiddleware, (req, res) => {
+app.post('/api/queue/token', authMiddleware, async (req, res) => {
   const { patient_id, doctor_id, department_id } = req.body;
   const patient = db.patients.find(p => p.id === parseInt(patient_id));
   const doctor = db.doctors.find(d => d.id === parseInt(doctor_id));
@@ -187,7 +449,7 @@ app.post('/api/queue/token', authMiddleware, (req, res) => {
 
   const deptEntriesToday = db.queue_entries.filter(q => q.department_id === parseInt(department_id));
   const seq = deptEntriesToday.length + 1;
-  const tokenNumber = `${dept.code}-${String(seq).padStart(3, '0')}`;
+  const tokenNumber = `${dept?.code || 'GM'}-${String(seq).padStart(3, '0')}`;
   const queueAccessToken = crypto.randomBytes(16).toString('hex');
 
   const newEntry = {
@@ -202,19 +464,28 @@ app.post('/api/queue/token', authMiddleware, (req, res) => {
     created_at: new Date(),
     called_at: null,
     consultation_started_at: null,
-    consultation_completed_at: null
+    consultation_completed_at: null,
+    actual_wait_minutes: null,
+    consultation_duration_minutes: null,
+    prediction_error_minutes: null,
+    approaching_notified_at: null,
+    turn_notified_at: null,
   };
   db.queue_entries.push(newEntry);
+
+  const enriched = {
+    ...newEntry,
+    patient_name: patient?.name,
+    doctor_name: doctor?.name,
+    department_name: dept?.name,
+  };
+
+  syncRealtimeQueueE2E(newEntry.doctor_id, newEntry.department_id, enriched, 'NEW_PATIENT');
 
   res.status(201).json({
     status: 'ok',
     message: 'Token generated successfully',
-    data: {
-      ...newEntry,
-      patient_name: patient?.name,
-      doctor_name: doctor?.name,
-      department_name: dept?.name
-    }
+    data: enriched,
   });
 });
 
@@ -231,7 +502,7 @@ app.get('/api/queue', authMiddleware, (req, res) => {
       patient_phone: p?.phone,
       doctor_name: d?.name,
       department_name: dep?.name,
-      department_code: dep?.code
+      department_code: dep?.code,
     };
   });
   res.json({ status: 'ok', data: result });
@@ -284,44 +555,216 @@ app.get('/api/queue/stats', authMiddleware, (req, res) => {
   });
 });
 
+// Helper for transition with state machine enforcement
+function transitionEntry(id, targetStatus) {
+  const entry = db.queue_entries.find(q => q.id === parseInt(id));
+  if (!entry) throw new Error('Queue entry not found');
+
+  const allowed = VALID_TRANSITIONS[entry.status] || [];
+  if (!allowed.includes(targetStatus)) {
+    throw new Error(`Cannot transition from ${entry.status} to ${targetStatus}`);
+  }
+
+  entry.status = targetStatus;
+  const now = new Date();
+
+  if (targetStatus === 'CALLED') {
+    entry.called_at = now;
+  } else if (targetStatus === 'IN_CONSULTATION') {
+    entry.consultation_started_at = now;
+    if (entry.created_at) {
+      entry.actual_wait_minutes = Math.max(0.5, Math.round(((now - new Date(entry.created_at)) / 60000) * 10) / 10);
+      const estWait = 18.0;
+      entry.prediction_error_minutes = Math.round(Math.abs(entry.actual_wait_minutes - estWait) * 10) / 10;
+      db.predictions.push({
+        queue_entry_id: entry.id,
+        token_number: entry.token_number,
+        actual_wait_minutes: entry.actual_wait_minutes,
+        predicted_wait_minutes: estWait,
+        prediction_error: entry.prediction_error_minutes,
+        created_at: now
+      });
+    }
+  } else if (targetStatus === 'COMPLETED') {
+    entry.consultation_completed_at = now;
+    if (entry.consultation_started_at) {
+      entry.consultation_duration_minutes = Math.max(0.5, Math.round(((now - new Date(entry.consultation_started_at)) / 60000) * 10) / 10);
+    }
+  }
+
+  const p = db.patients.find(pt => pt.id === entry.patient_id);
+  const d = db.doctors.find(doc => doc.id === entry.doctor_id);
+  const dep = db.departments.find(dp => dp.id === entry.department_id);
+
+  const enriched = {
+    ...entry,
+    patient_name: p?.name,
+    doctor_name: d?.name,
+    department_name: dep?.name,
+  };
+
+  syncRealtimeQueueE2E(entry.doctor_id, entry.department_id, enriched, targetStatus);
+  return enriched;
+}
+
 // ── Queue Actions (Doctor / Receptionist) ─────────
 app.post('/api/queue/:id/call', authMiddleware, (req, res) => {
-  const entry = db.queue_entries.find(q => q.id === parseInt(req.params.id));
-  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
-  entry.status = 'CALLED';
-  entry.called_at = new Date();
-  res.json({ status: 'ok', message: 'Patient called', data: entry });
+  try {
+    const updated = transitionEntry(req.params.id, 'CALLED');
+    res.json({ status: 'ok', message: 'Patient called', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
 });
 
 app.post('/api/queue/:id/start', authMiddleware, (req, res) => {
-  const entry = db.queue_entries.find(q => q.id === parseInt(req.params.id));
-  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
-  entry.status = 'IN_CONSULTATION';
-  entry.consultation_started_at = new Date();
-  res.json({ status: 'ok', message: 'Consultation started', data: entry });
+  try {
+    const updated = transitionEntry(req.params.id, 'IN_CONSULTATION');
+    res.json({ status: 'ok', message: 'Consultation started', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
 });
 
 app.post('/api/queue/:id/complete', authMiddleware, (req, res) => {
-  const entry = db.queue_entries.find(q => q.id === parseInt(req.params.id));
-  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
-  entry.status = 'COMPLETED';
-  entry.consultation_completed_at = new Date();
-  res.json({ status: 'ok', message: 'Consultation completed', data: entry });
+  try {
+    const updated = transitionEntry(req.params.id, 'COMPLETED');
+    res.json({ status: 'ok', message: 'Consultation completed', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
+});
+
+app.post('/api/queue/:id/no-show', authMiddleware, (req, res) => {
+  try {
+    const updated = transitionEntry(req.params.id, 'NO_SHOW');
+    res.json({ status: 'ok', message: 'Marked as no-show', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
 });
 
 app.post('/api/queue/:id/cancel', authMiddleware, (req, res) => {
-  const entry = db.queue_entries.find(q => q.id === parseInt(req.params.id));
-  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
-  entry.status = 'CANCELLED';
-  res.json({ status: 'ok', message: 'Queue entry cancelled', data: entry });
+  try {
+    const updated = transitionEntry(req.params.id, 'CANCELLED');
+    res.json({ status: 'ok', message: 'Queue entry cancelled', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
+});
+
+// ── Phase 4 Analytics Endpoints ───────────────────
+app.get('/api/analytics/live-status', authMiddleware, (req, res) => {
+  const liveDepartments = db.departments.map(dept => {
+    const deptEntries = db.queue_entries.filter(q => q.department_id === dept.id);
+    const waiting = deptEntries.filter(e => e.status === 'WAITING').length;
+    const called = deptEntries.filter(e => e.status === 'CALLED').length;
+    const consulting = deptEntries.filter(e => e.status === 'IN_CONSULTATION').length;
+    const completed = deptEntries.filter(e => e.status === 'COMPLETED').length;
+
+    const serving = deptEntries.find(e => e.status === 'IN_CONSULTATION') ||
+                    deptEntries.find(e => e.status === 'CALLED') || null;
+
+    return {
+      id: dept.id,
+      name: dept.name,
+      code: dept.code,
+      status: (waiting + called + consulting > 0) ? 'Active' : 'Idle',
+      currentlyServing: serving ? serving.token_number : '—',
+      waitingCount: waiting,
+      consultingCount: consulting,
+      completedCount: completed,
+      activeDoctorsCount: (waiting + called + consulting > 0) ? 1 : 0,
+    };
+  });
+
+  res.json({ status: 'ok', data: liveDepartments, timestamp: new Date().toISOString() });
+});
+
+app.get('/api/analytics/overview', authMiddleware, (req, res) => {
+  const completed = db.queue_entries.filter(q => q.status === 'COMPLETED');
+  const waiting = db.queue_entries.filter(q => q.status === 'WAITING');
+  const inConsult = db.queue_entries.filter(q => q.status === 'IN_CONSULTATION');
+  const noShows = db.queue_entries.filter(q => q.status === 'NO_SHOW');
+  const cancelled = db.queue_entries.filter(q => q.status === 'CANCELLED');
+
+  const waitTimes = db.queue_entries.filter(q => q.actual_wait_minutes !== null).map(q => q.actual_wait_minutes);
+  const avgWait = waitTimes.length ? (waitTimes.reduce((a, b) => a + b, 0) / waitTimes.length) : null;
+
+  const durations = db.queue_entries.filter(q => q.consultation_duration_minutes !== null).map(q => q.consultation_duration_minutes);
+  const avgDuration = durations.length ? (durations.reduce((a, b) => a + b, 0) / durations.length) : null;
+
+  const errors = db.queue_entries.filter(q => q.prediction_error_minutes !== null).map(q => q.prediction_error_minutes);
+  const avgError = errors.length ? (errors.reduce((a, b) => a + b, 0) / errors.length) : null;
+
+  res.json({
+    status: 'ok',
+    data: {
+      summary: {
+        patientsServedToday: completed.length,
+        currentWaitingPatients: waiting.length,
+        currentInConsultation: inConsult.length,
+        noShowsToday: noShows.length,
+        cancellationsToday: cancelled.length,
+        totalPatientsToday: db.queue_entries.length,
+        avgWaitingTimeMinutes: avgWait !== null ? Math.round(avgWait * 10) / 10 : null,
+        avgConsultationDurationMinutes: avgDuration !== null ? Math.round(avgDuration * 10) / 10 : null,
+        avgPredictionErrorMinutes: avgError !== null ? Math.round(avgError * 10) / 10 : null,
+      },
+      mlAccuracy: {
+        hasEnoughData: db.predictions.length >= 3,
+        evaluatedCount: db.predictions.length,
+        mae: avgError !== null ? Math.round(avgError * 10) / 10 : null,
+        rmse: avgError !== null ? Math.round(avgError * 1.2 * 10) / 10 : null,
+        note: db.predictions.length >= 3 ? 'Evaluated against completed consultation telemetry' : 'Collecting more consultation telemetry (minimum 3 completed required)',
+      },
+      hourlyVolume: [
+        { hour: '09:00', volume: 2 },
+        { hour: '10:00', volume: 1 },
+      ],
+      departmentPerformance: db.departments.map(d => ({
+        departmentId: d.id,
+        name: d.name,
+        code: d.code,
+        totalRegistered: db.queue_entries.filter(q => q.department_id === d.id).length,
+        served: db.queue_entries.filter(q => q.department_id === d.id && q.status === 'COMPLETED').length,
+        waiting: db.queue_entries.filter(q => q.department_id === d.id && q.status === 'WAITING').length,
+        avgWaitMinutes: avgWait,
+      })),
+      doctorPerformance: db.doctors.map(doc => ({
+        doctorId: doc.id,
+        doctorName: doc.name,
+        departmentName: 'General Medicine',
+        completedCount: db.queue_entries.filter(q => q.doctor_id === doc.id && q.status === 'COMPLETED').length,
+        avgDurationMinutes: avgDuration,
+      })),
+      predictedVsActual: db.predictions.slice(-10),
+    }
+  });
+});
+
+app.get('/api/queue/admin/prediction-metrics', authMiddleware, (req, res) => {
+  res.json({
+    status: 'ok',
+    data: {
+      modelInfo: { name: 'GradientBoostingRegressor', version: 'v1.0' },
+      modelMetrics: { mae: 2.8, r2_score: 0.88 },
+      liveDatabaseStats: {
+        totalPredictions: db.predictions.length,
+        evaluatedCount: db.predictions.length,
+        liveMAE: 2.5,
+      },
+      recentPredictions: db.predictions.slice(-10),
+    }
+  });
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', environment: 'e2e-test', services: { server: 'running', database: 'in-memory' } });
+  res.json({ status: 'ok', environment: 'e2e-test', services: { server: 'running', database: 'in-memory', socket: 'enabled' } });
 });
 
-export const server = app.listen(PORT, () => {
-  console.log(`🚀 E2E Test Backend running on http://localhost:${PORT}`);
+export const runningServer = server.listen(PORT, () => {
+  console.log(`🚀 E2E Test Backend + Socket.IO running on http://localhost:${PORT}`);
 });
 
 export default app;
