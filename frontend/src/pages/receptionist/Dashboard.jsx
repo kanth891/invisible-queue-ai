@@ -148,12 +148,12 @@ export default function ReceptionistDashboard() {
         <head>
           <title>Outpatient Pass - ${tokenData.token_number}</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; color: #1E293B; }
-            .hospital { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: #0F5147; margin-bottom: 2px; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; color: #0F172A; }
+            .hospital { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: #1E3A8A; margin-bottom: 2px; }
             .subtitle { font-size: 11px; color: #64748B; margin-bottom: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
-            .token-box { margin: 16px 0; padding: 14px; border: 1.5px solid #0D9488; border-radius: 8px; background: #F0FDFA; }
-            .token-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #0F766E; letter-spacing: 0.05em; }
-            .token { font-size: 48px; font-weight: 900; letter-spacing: 0.02em; margin: 4px 0; color: #0F5147; }
+            .token-box { margin: 16px 0; padding: 14px; border: 1.5px solid #2563EB; border-radius: 8px; background: #EFF6FF; }
+            .token-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #1D4ED8; letter-spacing: 0.05em; }
+            .token { font-size: 48px; font-weight: 900; letter-spacing: 0.02em; margin: 4px 0; color: #1D4ED8; }
             .info { font-size: 12px; text-align: left; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin: 16px 0; line-height: 1.6; }
             .instructions { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.4; border-top: 1px solid #E2E8F0; padding-top: 12px; }
             .url { font-size: 10px; color: #64748B; margin-top: 8px; word-break: break-all; }
@@ -223,14 +223,13 @@ export default function ReceptionistDashboard() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.45rem',
-            background: socketStatus === 'connected' ? 'rgba(6, 182, 212, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-            border: `1px solid ${socketStatus === 'connected' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+            background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
+            border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
             padding: '0.35rem 0.75rem',
             borderRadius: '100px',
             fontSize: '0.75rem',
             fontWeight: '700',
-            color: socketStatus === 'connected' ? '#38BDF8' : '#FBBF24',
-            backdropFilter: 'blur(8px)',
+            color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
           }}
         >
           <span
@@ -239,7 +238,6 @@ export default function ReceptionistDashboard() {
               height: '6px',
               borderRadius: '50%',
               background: socketStatus === 'connected' ? '#10B981' : '#F59E0B',
-              boxShadow: socketStatus === 'connected' ? '0 0 8px #10B981' : '0 0 8px #F59E0B',
             }}
           />
           <span>{socketStatus === 'connected' ? 'Live Connected' : 'Reconnecting...'}</span>
@@ -255,15 +253,15 @@ export default function ReceptionistDashboard() {
           </div>
           <div className="clinical-stat-card">
             <span className="clinical-stat-card__label">Waiting in Queue</span>
-            <span className="clinical-stat-card__value" style={{ color: '#FBBF24' }}>{stats.waiting}</span>
+            <span className="clinical-stat-card__value" style={{ color: '#D97706' }}>{stats.waiting}</span>
           </div>
           <div className="clinical-stat-card">
             <span className="clinical-stat-card__label">In Consultation</span>
-            <span className="clinical-stat-card__value" style={{ color: '#38BDF8' }}>{stats.in_consultation}</span>
+            <span className="clinical-stat-card__value" style={{ color: '#2563EB' }}>{stats.in_consultation}</span>
           </div>
           <div className="clinical-stat-card">
             <span className="clinical-stat-card__label">Completed Visits</span>
-            <span className="clinical-stat-card__value" style={{ color: '#34D399' }}>{stats.completed}</span>
+            <span className="clinical-stat-card__value" style={{ color: '#059669' }}>{stats.completed}</span>
           </div>
         </div>
       )}
@@ -273,7 +271,7 @@ export default function ReceptionistDashboard() {
         
         {/* Left Column: Intake Registration */}
         <div className="card" style={{ padding: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem', letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.35rem', letterSpacing: '-0.01em' }}>
             Patient Intake & Token
           </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.35rem' }}>
@@ -284,18 +282,17 @@ export default function ReceptionistDashboard() {
           {message && message.type === 'success' && (
             <div
               style={{
-                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(13, 19, 35, 0.9) 100%)',
-                border: '1px solid rgba(6, 182, 212, 0.35)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(6, 182, 212, 0.15)',
+                background: 'linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 100%)',
+                border: '1px solid #BAE6FD',
+                boxShadow: '0 8px 25px rgba(2, 132, 199, 0.1)',
                 padding: '1.25rem',
                 borderRadius: '12px',
                 marginBottom: '1.35rem',
-                backdropFilter: 'blur(12px)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', color: '#34D399', fontWeight: '700', fontSize: '0.85rem' }}>
-                  <CheckCircleIcon size={16} color="#34D399" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', color: '#059669', fontWeight: '700', fontSize: '0.85rem' }}>
+                  <CheckCircleIcon size={16} color="#059669" />
                   <span>Token Generated Successfully</span>
                 </span>
                 <button
@@ -315,7 +312,7 @@ export default function ReceptionistDashboard() {
                 <div style={{
                   fontSize: 'clamp(2.4rem, 8vw, 3rem)',
                   fontWeight: '900',
-                  background: 'linear-gradient(135deg, #38BDF8 0%, #34D399 100%)',
+                  background: 'linear-gradient(135deg, #1D4ED8 0%, #0284C7 60%, #0EA5E9 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   lineHeight: 1.1,
@@ -324,10 +321,10 @@ export default function ReceptionistDashboard() {
                 }}>
                   {message.data.token_number}
                 </div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: '700', wordBreak: 'break-word' }}>
+                <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: '800', wordBreak: 'break-word' }}>
                   {message.data.doctor_name}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: '600', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: '600', marginTop: '0.15rem' }}>
                   {message.data.department_name}
                 </div>
               </div>
@@ -337,14 +334,14 @@ export default function ReceptionistDashboard() {
                 <div
                   style={{
                     background: '#FFFFFF',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    border: '1px solid #E2E8F0',
                     borderRadius: '10px',
                     padding: '0.9rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     margin: '0.75rem 0',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+                    boxShadow: '0 2px 10px rgba(15, 23, 42, 0.05)'
                   }}
                 >
                   <QRCodeSVG
@@ -390,7 +387,7 @@ export default function ReceptionistDashboard() {
                     style={{
                       textAlign: 'center',
                       fontSize: '0.78rem',
-                      color: '#38BDF8',
+                      color: '#2563EB',
                       textDecoration: 'underline',
                       marginTop: '0.4rem',
                       fontWeight: '600',
@@ -407,9 +404,9 @@ export default function ReceptionistDashboard() {
           {message && message.type === 'error' && (
             <div
               style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                color: '#FCA5A5',
-                border: '1px solid rgba(239, 68, 68, 0.35)',
+                background: '#FEF2F2',
+                color: '#B91C1C',
+                border: '1px solid #FECACA',
                 padding: '0.75rem 0.95rem',
                 borderRadius: '8px',
                 marginBottom: '1rem',
@@ -419,7 +416,7 @@ export default function ReceptionistDashboard() {
                 gap: '0.5rem'
               }}
             >
-              <AlertTriangleIcon size={16} color="#EF4444" />
+              <AlertTriangleIcon size={16} color="#DC2626" />
               <span>{message.text}</span>
             </div>
           )}
@@ -526,7 +523,7 @@ export default function ReceptionistDashboard() {
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
                 Live Outpatient Queue ({queue.length})
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
@@ -562,20 +559,20 @@ export default function ReceptionistDashboard() {
                   {queue.map(q => (
                     <tr key={q.id}>
                       {/* Token */}
-                      <td style={{ fontWeight: '800', color: '#38BDF8', fontSize: '0.92rem', fontFamily: "'Outfit', sans-serif" }}>
+                      <td style={{ fontWeight: '800', color: '#2563EB', fontSize: '0.92rem', fontFamily: "'Outfit', sans-serif" }}>
                         {q.token_number}
                       </td>
 
                       {/* Patient */}
                       <td>
-                        <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{q.patient_name}</div>
+                        <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                           {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
                         </div>
                       </td>
 
                       {/* Doctor */}
-                      <td style={{ color: 'var(--text-primary)' }}>{q.doctor_name}</td>
+                      <td style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{q.doctor_name}</td>
 
                       {/* Department */}
                       <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{q.department_name}</td>
@@ -595,7 +592,7 @@ export default function ReceptionistDashboard() {
                             onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
                             className="table-action-btn"
                           >
-                            <QrCodeIcon size={13} color="#06B6D4" />
+                            <QrCodeIcon size={13} color="#2563EB" />
                             <span>Queue Pass</span>
                           </button>
                         ) : (
@@ -638,7 +635,7 @@ export default function ReceptionistDashboard() {
                   <span className="mobile-queue-card__token">{q.token_number}</span>
                   <div className="status-indicator">
                     <span className={`status-dot ${getStatusDotClass(q.status)}`} />
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>{formatStatus(q.status)}</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700' }}>{formatStatus(q.status)}</span>
                   </div>
                 </div>
 
@@ -647,10 +644,10 @@ export default function ReceptionistDashboard() {
                   <div className="mobile-queue-card__meta">
                     <span>{q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}</span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-primary)', marginTop: '0.2rem' }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginTop: '0.2rem' }}>
                     <strong>Doctor:</strong> {q.doctor_name}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#38BDF8', marginTop: '0.1rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#2563EB', marginTop: '0.1rem', fontWeight: '600' }}>
                     <strong>Dept:</strong> {q.department_name}
                   </div>
                 </div>
@@ -662,7 +659,7 @@ export default function ReceptionistDashboard() {
                       className="table-action-btn"
                       style={{ flex: 1, minHeight: '40px' }}
                     >
-                      <QrCodeIcon size={14} color="#06B6D4" />
+                      <QrCodeIcon size={14} color="#2563EB" />
                       <span>Queue Pass</span>
                     </button>
                   )}
@@ -692,10 +689,10 @@ export default function ReceptionistDashboard() {
       {/* ── QR Code Pass Modal ── */}
       {activeQRModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ textAlign: 'center', background: '#0D1322', border: '1px solid rgba(255, 255, 255, 0.12)', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(6, 182, 212, 0.15)' }}>
+          <div className="modal-content" style={{ textAlign: 'center', background: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 20px 50px rgba(15, 23, 42, 0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.1rem' }}>
               <div style={{ textAlign: 'left' }}>
-                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#38BDF8', fontWeight: '700' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2563EB', fontWeight: '700' }}>
                   Outpatient Digital Pass
                 </span>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.01em', fontFamily: "'Outfit', sans-serif" }}>
@@ -711,7 +708,7 @@ export default function ReceptionistDashboard() {
               </button>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '0.9rem', marginBottom: '1.1rem', textAlign: 'left' }}>
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.9rem', marginBottom: '1.1rem', textAlign: 'left' }}>
               <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {activeQRModal.patient_name}
               </div>
@@ -723,12 +720,12 @@ export default function ReceptionistDashboard() {
             <div
               style={{
                 background: '#FFFFFF',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
+                border: '1px solid #CBD5E1',
                 borderRadius: '12px',
                 padding: '1.25rem',
                 display: 'inline-block',
                 margin: '0 auto 1rem auto',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
+                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.06)'
               }}
             >
               <QRCodeSVG
@@ -767,7 +764,7 @@ export default function ReceptionistDashboard() {
               rel="noopener noreferrer"
               style={{
                 fontSize: '0.8rem',
-                color: '#38BDF8',
+                color: '#2563EB',
                 textDecoration: 'underline',
                 fontWeight: '600'
               }}
@@ -786,7 +783,7 @@ const labelStyle = {
   display: 'block',
   marginBottom: '0.35rem',
   fontSize: '0.78rem',
-  fontWeight: '600',
+  fontWeight: '700',
   color: 'var(--text-secondary)'
 };
 

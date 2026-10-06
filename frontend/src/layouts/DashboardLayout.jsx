@@ -53,7 +53,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
 
   return (
     <div className="app">
-      {/* Top Navigation Bar: Minimal, Clean, Luxury */}
+      {/* Top Navigation Bar: Bright, Crisp, Luxury Frosted Glass */}
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           {/* Mobile Hamburger Button */}
@@ -64,14 +64,14 @@ export default function DashboardLayout({ allowedRoles = [] }) {
               aria-label="Open Navigation Menu"
               title="Open Navigation Menu"
             >
-              <MenuIcon size={20} color="var(--primary-cyan)" />
+              <MenuIcon size={20} color="var(--primary-blue)" />
             </button>
           </div>
 
           {/* Brand Logo & Title */}
           <div className="header__brand">
             <div className="header__icon">
-              <MedicalCrossIcon size={20} color="#041017" />
+              <MedicalCrossIcon size={20} color="#FFFFFF" />
             </div>
             <div>
               <div className="header__title">Invisible Queue AI</div>
@@ -84,7 +84,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
 
         {/* Desktop Navigation Links */}
         <nav className="header__nav-desktop">
-          <span style={{ fontSize: '0.84rem', fontWeight: '700', color: 'var(--primary-cyan)', borderBottom: '2px solid var(--primary-cyan)', paddingBottom: '0.25rem', cursor: 'pointer' }}>
+          <span style={{ fontSize: '0.84rem', fontWeight: '700', color: 'var(--primary-blue)', borderBottom: '2px solid var(--primary-blue)', paddingBottom: '0.25rem', cursor: 'pointer' }}>
             {user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}
           </span>
           <span style={{ fontSize: '0.84rem', fontWeight: '500', color: 'var(--text-secondary)', cursor: 'default' }}>
@@ -137,7 +137,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
             <div className="mobile-drawer__header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                 <div className="header__icon" style={{ width: '32px', height: '32px' }}>
-                  <MedicalCrossIcon size={16} color="#041017" />
+                  <MedicalCrossIcon size={16} color="#FFFFFF" />
                 </div>
                 <span style={{ fontWeight: '800', fontFamily: 'var(--font-heading)', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
                   Invisible Queue AI
@@ -171,7 +171,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
                 Active Workspace
               </div>
               <div className="mobile-drawer__nav-item mobile-drawer__nav-item--active">
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-cyan)', display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px var(--primary-cyan)' }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-blue)', display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px rgba(37, 99, 235, 0.4)' }} />
                 <span>{user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}</span>
               </div>
               <div className="mobile-drawer__nav-item" style={{ opacity: 0.65 }}>
@@ -185,9 +185,9 @@ export default function DashboardLayout({ allowedRoles = [] }) {
               <button
                 onClick={handleLogout}
                 className="btn-secondary"
-                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.35)' }}
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', color: '#DC2626', borderColor: '#FECACA' }}
               >
-                <LogOutIcon size={16} color="#F87171" />
+                <LogOutIcon size={16} color="#DC2626" />
                 <span>Sign Out</span>
               </button>
             </div>

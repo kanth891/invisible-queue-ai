@@ -122,14 +122,13 @@ export default function DoctorDashboard() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.45rem',
-              background: socketStatus === 'connected' ? 'rgba(6, 182, 212, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-              border: `1px solid ${socketStatus === 'connected' ? 'rgba(6, 182, 212, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+              background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
+              border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
               padding: '0.35rem 0.75rem',
               borderRadius: '100px',
               fontSize: '0.75rem',
               fontWeight: '700',
-              color: socketStatus === 'connected' ? '#38BDF8' : '#FBBF24',
-              backdropFilter: 'blur(8px)',
+              color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
             }}
           >
             <span
@@ -138,7 +137,6 @@ export default function DoctorDashboard() {
                 height: '6px',
                 borderRadius: '50%',
                 background: socketStatus === 'connected' ? '#10B981' : '#F59E0B',
-                boxShadow: socketStatus === 'connected' ? '0 0 8px #10B981' : '0 0 8px #F59E0B',
               }}
             />
             <span>{socketStatus === 'connected' ? 'Live Connected' : 'Reconnecting...'}</span>
@@ -152,25 +150,24 @@ export default function DoctorDashboard() {
             padding: '1.6rem',
             marginBottom: '1.5rem',
             background: currentPatient
-              ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(13, 19, 35, 0.85) 100%)'
-              : 'var(--bg-surface)',
-            border: `1px solid ${currentPatient ? 'rgba(6, 182, 212, 0.35)' : 'var(--border-subtle)'}`,
+              ? 'linear-gradient(135deg, #F0F9FF 0%, #FFFFFF 100%)'
+              : '#FFFFFF',
+            border: `1px solid ${currentPatient ? '#BAE6FD' : 'var(--border-subtle)'}`,
             boxShadow: currentPatient
-              ? '0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(6, 182, 212, 0.15)'
+              ? '0 10px 30px rgba(2, 132, 199, 0.10), 0 0 0 1px #BAE6FD'
               : 'var(--shadow-card)',
-            backdropFilter: 'blur(16px)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: currentPatient ? '#38BDF8' : 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: currentPatient ? '#0284C7' : 'var(--text-secondary)' }}>
               Current Consultation Room
             </span>
             {currentPatient && (
               <span
                 style={{
-                  background: currentPatient.status === 'CALLED' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  color: currentPatient.status === 'CALLED' ? '#38BDF8' : '#34D399',
-                  border: `1px solid ${currentPatient.status === 'CALLED' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`,
+                  background: currentPatient.status === 'CALLED' ? '#EFF6FF' : '#ECFDF5',
+                  color: currentPatient.status === 'CALLED' ? '#1D4ED8' : '#047857',
+                  border: `1px solid ${currentPatient.status === 'CALLED' ? '#BFDBFE' : '#A7F3D0'}`,
                   padding: '0.3rem 0.75rem',
                   borderRadius: '100px',
                   fontSize: '0.75rem',
@@ -184,8 +181,7 @@ export default function DoctorDashboard() {
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      background: currentPatient.status === 'CALLED' ? '#38BDF8' : '#34D399',
-                      boxShadow: currentPatient.status === 'CALLED' ? '0 0 8px #38BDF8' : '0 0 8px #34D399',
+                      background: currentPatient.status === 'CALLED' ? '#2563EB' : '#10B981',
                       display: 'inline-block',
                     }}
                   />
@@ -201,7 +197,7 @@ export default function DoctorDashboard() {
                 <div style={{
                   fontSize: 'clamp(2.6rem, 10vw, 3.5rem)',
                   fontWeight: '900',
-                  background: 'linear-gradient(135deg, #38BDF8 0%, #34D399 100%)',
+                  background: 'linear-gradient(135deg, #1D4ED8 0%, #0284C7 60%, #0EA5E9 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   lineHeight: 1,
@@ -210,7 +206,7 @@ export default function DoctorDashboard() {
                 }}>
                   {currentPatient.token_number}
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', marginTop: '0.5rem', wordBreak: 'break-word', letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', marginTop: '0.5rem', wordBreak: 'break-word', letterSpacing: '-0.01em' }}>
                   {currentPatient.patient_name}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
@@ -236,13 +232,13 @@ export default function DoctorDashboard() {
                     onClick={() => handleAction(currentPatient.id, 'complete')}
                     disabled={actionLoading}
                     style={{
-                      background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                      background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                       color: '#FFFFFF',
-                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                      border: 'none',
+                      boxShadow: '0 4px 14px rgba(5, 150, 105, 0.28)',
                       padding: '0.75rem',
                       minHeight: '48px',
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       fontWeight: '700',
                       cursor: 'pointer',
                       fontSize: '0.92rem',
@@ -277,17 +273,17 @@ export default function DoctorDashboard() {
                   width: '56px',
                   height: '56px',
                   borderRadius: '16px',
-                  background: 'rgba(6, 182, 212, 0.1)',
-                  border: '1px solid rgba(6, 182, 212, 0.25)',
+                  background: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 20px rgba(6, 182, 212, 0.15)'
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.1)'
                 }}>
-                  <StethoscopeIcon size={30} color="#06B6D4" />
+                  <StethoscopeIcon size={30} color="#2563EB" />
                 </div>
               </div>
-              <div style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.35rem', fontFamily: "'Outfit', sans-serif" }}>
+              <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.35rem', fontFamily: "'Outfit', sans-serif" }}>
                 No Active Patient in Room
               </div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
@@ -317,7 +313,7 @@ export default function DoctorDashboard() {
         {/* Waiting Queue List */}
         <div className="card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
               Waiting Queue ({waitingPatients.length})
             </h2>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -340,18 +336,18 @@ export default function DoctorDashboard() {
                 <tbody>
                   {waitingPatients.map(q => (
                     <tr key={q.id}>
-                      <td style={{ fontWeight: '800', color: '#38BDF8', fontFamily: "'Outfit', sans-serif" }}>{q.token_number}</td>
+                      <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{q.token_number}</td>
                       <td>
-                        <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{q.patient_name}</div>
+                        <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{q.patient_age} yrs • {q.patient_gender}</div>
                       </td>
                       <td>
                         <div className="status-indicator">
                           <span className="status-dot status-dot--waiting" />
-                          <span>Waiting</span>
+                          <span style={{ fontWeight: '600', color: '#B45309' }}>Waiting</span>
                         </div>
                       </td>
-                      <td style={{ color: '#34D399', fontSize: '0.82rem', fontWeight: '600' }}>
+                      <td style={{ color: '#059669', fontSize: '0.82rem', fontWeight: '700' }}>
                         {q.predicted_wait_minutes !== undefined
                           ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
                           : '—'}
@@ -378,7 +374,7 @@ export default function DoctorDashboard() {
                   <span className="mobile-queue-card__token">{q.token_number}</span>
                   <div className="status-indicator">
                     <span className="status-dot status-dot--waiting" />
-                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>Waiting</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#B45309' }}>Waiting</span>
                   </div>
                 </div>
 
@@ -387,7 +383,7 @@ export default function DoctorDashboard() {
                   <div className="mobile-queue-card__meta">
                     <span>{q.patient_age} yrs • {q.patient_gender}</span>
                   </div>
-                  <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#34D399', fontWeight: '600' }}>
+                  <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#059669', fontWeight: '700' }}>
                     <span>Estimated Wait:</span>
                     <span>
                       {q.predicted_wait_minutes !== undefined
@@ -411,21 +407,21 @@ export default function DoctorDashboard() {
       {/* ── Sidebar: Room Overview Metrics ── */}
       <div>
         <div className="card" style={{ padding: '1.35rem' }}>
-          <h2 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '1rem', letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '1rem', letterSpacing: '-0.01em' }}>
             Room Overview
           </h2>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
             <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
               <span className="clinical-stat-card__label">Waiting in Queue</span>
-              <span className="clinical-stat-card__value" style={{ color: '#FBBF24' }}>
+              <span className="clinical-stat-card__value" style={{ color: '#D97706' }}>
                 {waitingPatients.length}
               </span>
             </div>
 
             <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
               <span className="clinical-stat-card__label">Completed</span>
-              <span className="clinical-stat-card__value" style={{ color: '#34D399' }}>
+              <span className="clinical-stat-card__value" style={{ color: '#059669' }}>
                 {completedPatients.filter(p => p.status === 'COMPLETED').length}
               </span>
             </div>

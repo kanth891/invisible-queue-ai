@@ -113,19 +113,16 @@ export function NotificationProvider({ children }) {
           {notifications.map((n) => {
             const isTurn = n.type === 'TURN';
             const isApproaching = n.type === 'APPROACHING';
-            const bg = isTurn
-              ? 'rgba(13, 27, 30, 0.94)'
-              : isApproaching
-              ? 'rgba(30, 24, 12, 0.94)'
-              : 'rgba(13, 19, 34, 0.94)';
-            const borderColor = isTurn ? '#06B6D4' : isApproaching ? '#F59E0B' : 'rgba(255, 255, 255, 0.12)';
+            const bg = '#FFFFFF';
+            const borderColor = isTurn ? '#BFDBFE' : isApproaching ? '#FDE68A' : '#E2E8F0';
+            const leftBarColor = isTurn ? '#2563EB' : isApproaching ? '#F59E0B' : '#059669';
             const accentGlow = isTurn
-              ? '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(6, 182, 212, 0.25)'
+              ? '0 10px 30px rgba(37, 99, 235, 0.16), 0 0 0 1px rgba(37, 99, 235, 0.2)'
               : isApproaching
-              ? '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.25)'
-              : '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 0, 0, 0.4)';
-            const titleColor = isTurn ? '#38BDF8' : isApproaching ? '#FBBF24' : '#F8FAFC';
-            const textColor = '#CBD5E1';
+              ? '0 10px 30px rgba(245, 158, 11, 0.16), 0 0 0 1px rgba(245, 158, 11, 0.2)'
+              : '0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.9)';
+            const titleColor = isTurn ? '#1D4ED8' : isApproaching ? '#B45309' : '#0F172A';
+            const textColor = '#475569';
 
             return (
               <div
@@ -135,10 +132,8 @@ export function NotificationProvider({ children }) {
                 style={{
                   pointerEvents: 'auto',
                   background: bg,
-                  backdropFilter: 'blur(16px)',
-                  WebkitBackdropFilter: 'blur(16px)',
                   border: `1px solid ${borderColor}`,
-                  borderLeft: `4px solid ${borderColor}`,
+                  borderLeft: `4px solid ${leftBarColor}`,
                   borderRadius: '12px',
                   padding: '0.9rem 1.1rem',
                   boxShadow: accentGlow,
@@ -168,9 +163,9 @@ export function NotificationProvider({ children }) {
                           width: '8px',
                           height: '8px',
                           borderRadius: '50%',
-                          backgroundColor: borderColor,
+                          backgroundColor: leftBarColor,
                           display: 'inline-block',
-                          boxShadow: `0 0 8px ${borderColor}`,
+                          boxShadow: `0 0 6px ${leftBarColor}`,
                         }}
                       />
                       <span>{n.title}</span>

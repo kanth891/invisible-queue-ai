@@ -54,7 +54,7 @@ export default function Login() {
         minHeight: '100vh',
         padding: '1.25rem',
         boxSizing: 'border-box',
-        backgroundImage: 'radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.12) 0%, transparent 55%), radial-gradient(circle at 85% 75%, rgba(139, 92, 246, 0.08) 0%, transparent 45%)'
+        backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.06) 0%, transparent 45%), radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.06) 0%, transparent 40%), radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.04) 0%, transparent 50%)'
       }}
     >
       <div
@@ -63,10 +63,11 @@ export default function Login() {
           maxWidth: '430px',
           width: '100%',
           padding: 'clamp(1.5rem, 5vw, 2.25rem)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(6, 182, 212, 0.12)',
+          boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85)',
           boxSizing: 'border-box',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          background: '#FFFFFF'
         }}
       >
         {/* Luminous Top Accent Bar */}
@@ -76,7 +77,7 @@ export default function Login() {
             top: 0,
             left: 0,
             right: 0,
-            height: '3px',
+            height: '4px',
             background: 'var(--primary-gradient)'
           }}
         />
@@ -85,26 +86,26 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div
             style={{
-              width: '50px',
-              height: '50px',
+              width: '52px',
+              height: '52px',
               borderRadius: '14px',
               background: 'var(--primary-gradient)',
-              color: '#041017',
+              color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 0.85rem',
-              boxShadow: '0 0 24px rgba(6, 182, 212, 0.45)'
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)'
             }}
           >
-            <MedicalCrossIcon size={26} color="#041017" />
+            <MedicalCrossIcon size={26} color="#FFFFFF" />
           </div>
           <h1
             style={{
               fontSize: '1.45rem',
               fontWeight: '900',
               fontFamily: 'var(--font-heading)',
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #38BDF8 60%, #818CF8 100%)',
+              background: 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               marginBottom: '0.3rem',
@@ -122,9 +123,9 @@ export default function Login() {
         {error && (
           <div
             style={{
-              background: 'rgba(239, 68, 68, 0.14)',
-              color: '#F87171',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
+              background: '#FEF2F2',
+              color: '#B91C1C',
+              border: '1px solid #FECACA',
               padding: '0.75rem 1rem',
               borderRadius: '8px',
               marginBottom: '1.25rem',
@@ -134,7 +135,7 @@ export default function Login() {
               gap: '0.5rem'
             }}
           >
-            <AlertTriangleIcon size={16} color="#F87171" />
+            <AlertTriangleIcon size={16} color="#B91C1C" />
             <span>{error}</span>
           </div>
         )}
@@ -202,7 +203,7 @@ export default function Login() {
           >
             {loading ? (
               <>
-                <span className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#041017' }} />
+                <span className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#FFFFFF' }} />
                 Signing In...
               </>
             ) : (
@@ -229,11 +230,12 @@ export default function Login() {
                 alignItems: 'flex-start',
                 gap: '0.15rem',
                 width: '100%',
-                background: 'rgba(22, 32, 54, 0.6)'
+                background: '#F8FAFC',
+                borderColor: '#E2E8F0'
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                <UserIcon size={14} color="#06B6D4" /> Receptionist
+                <UserIcon size={14} color="#2563EB" /> Receptionist
               </span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>receptionist1@hospital.com</span>
             </button>
@@ -249,11 +251,12 @@ export default function Login() {
                 alignItems: 'flex-start',
                 gap: '0.15rem',
                 width: '100%',
-                background: 'rgba(22, 32, 54, 0.6)'
+                background: '#F8FAFC',
+                borderColor: '#E2E8F0'
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                <StethoscopeIcon size={14} color="#10B981" /> Doctor (General Medicine)
+                <StethoscopeIcon size={14} color="#059669" /> Doctor (General Medicine)
               </span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>dr.ravi@hospital.com</span>
             </button>
@@ -269,11 +272,12 @@ export default function Login() {
                 alignItems: 'flex-start',
                 gap: '0.15rem',
                 width: '100%',
-                background: 'rgba(22, 32, 54, 0.6)'
+                background: '#F8FAFC',
+                borderColor: '#E2E8F0'
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                <ShieldCheckIcon size={14} color="#8B5CF6" /> Administrator
+                <ShieldCheckIcon size={14} color="#4F46E5" /> Administrator
               </span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>admin@hospital.com</span>
             </button>
