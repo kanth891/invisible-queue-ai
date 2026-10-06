@@ -93,6 +93,14 @@ export async function autoMigrate() {
       );
       CREATE INDEX IF NOT EXISTS idx_predictions_queue_entry ON predictions(queue_entry_id);
       CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON predictions(created_at);
+
+      -- Phase 4 Real-Time Intelligent Queue Columns & Notification Tracking
+      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS actual_wait_minutes NUMERIC(5, 1);
+      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS consultation_duration_minutes NUMERIC(5, 1);
+      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS prediction_error_minutes NUMERIC(5, 1);
+      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS approaching_notified_at TIMESTAMPTZ;
+      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS turn_notified_at TIMESTAMPTZ;
+      CREATE INDEX IF NOT EXISTS idx_queue_entries_status_date ON queue_entries(status, queue_date);
     `);
 
     // Check if seed users exist

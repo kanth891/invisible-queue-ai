@@ -83,6 +83,13 @@ CREATE TABLE IF NOT EXISTS queue_entries (
 ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_token VARCHAR(64) UNIQUE;
 ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_created_at TIMESTAMPTZ DEFAULT NOW();
 
+-- Phase 4 Real-Time Intelligent Queue Columns & Notification Tracking
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS actual_wait_minutes NUMERIC(5, 1);
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS consultation_duration_minutes NUMERIC(5, 1);
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS prediction_error_minutes NUMERIC(5, 1);
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS approaching_notified_at TIMESTAMPTZ;
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS turn_notified_at TIMESTAMPTZ;
+
 -- Backfill any existing queue entries without an access token
 UPDATE queue_entries
 SET queue_access_token = md5(random()::text || clock_timestamp()::text || id::text)
@@ -92,6 +99,7 @@ WHERE queue_access_token IS NULL;
 CREATE INDEX IF NOT EXISTS idx_queue_entries_doctor_date    ON queue_entries(doctor_id, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_department_date ON queue_entries(department_id, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_status         ON queue_entries(status);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_status_date    ON queue_entries(status, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_token          ON queue_entries(token_number, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_access_token   ON queue_entries(queue_access_token);
 CREATE INDEX IF NOT EXISTS idx_doctors_department           ON doctors(department_id);

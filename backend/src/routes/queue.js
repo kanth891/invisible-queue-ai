@@ -3,8 +3,18 @@ import crypto from 'crypto';
 import pool from '../db/index.js';
 import { authorize } from '../middleware/auth.js';
 import mlClient from '../services/mlClient.js';
+import {
+  SOCKET_EVENTS,
+  emitToPatient,
+  emitToDoctor,
+  emitToDepartment,
+  emitToAdmin,
+  broadcastQueueUpdate,
+} from '../socket/index.js';
 
 const router = Router();
+
+export const APPROACHING_THRESHOLD = parseInt(process.env.APPROACHING_THRESHOLD || '2', 10);
 
 // ── Valid state transitions ────────────────────────
 const VALID_TRANSITIONS = {
@@ -223,6 +233,157 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
 }
 
 /**
+ * Synchronize queue state and trigger real-time Socket.IO notifications + ML predictions
+ * across connected patient passes, doctor console, receptionist desk, and admin overview.
+ */
+export async function syncDoctorQueueRealtime(doctorId, departmentId, triggeredEntry = null, action = null) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // 1. If triggered entry exists, handle specific patient-targeted event
+    if (triggeredEntry && triggeredEntry.queue_access_token) {
+      if (triggeredEntry.status === 'CALLED') {
+        if (!triggeredEntry.turn_notified_at) {
+          try {
+            await pool.query('UPDATE queue_entries SET turn_notified_at = NOW() WHERE id = $1', [triggeredEntry.id]);
+          } catch (e) { /* ignore */ }
+        }
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.PATIENT_TURN, {
+          token: triggeredEntry.token_number,
+          doctor: triggeredEntry.doctor_name,
+          department: triggeredEntry.department_name,
+          message: "It's your turn! Please proceed to the consultation room.",
+        });
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.TOKEN_CALLED, {
+          token: triggeredEntry.token_number,
+          status: 'CALLED',
+          currentToken: triggeredEntry.token_number,
+          position: 1,
+          patientsAhead: 0,
+        });
+      } else if (triggeredEntry.status === 'IN_CONSULTATION') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.CONSULTATION_STARTED, {
+          token: triggeredEntry.token_number,
+          status: 'IN_CONSULTATION',
+          currentToken: triggeredEntry.token_number,
+          message: 'Consultation has begun with doctor.',
+        });
+      } else if (triggeredEntry.status === 'COMPLETED') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.CONSULTATION_COMPLETED, {
+          token: triggeredEntry.token_number,
+          status: 'COMPLETED',
+          message: 'Consultation completed. Wishing you good health!',
+        });
+      } else if (triggeredEntry.status === 'NO_SHOW') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.PATIENT_NO_SHOW, {
+          token: triggeredEntry.token_number,
+          status: 'NO_SHOW',
+          message: 'Marked as no-show by hospital staff.',
+        });
+      } else if (triggeredEntry.status === 'CANCELLED') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.PATIENT_CANCELLED, {
+          token: triggeredEntry.token_number,
+          status: 'CANCELLED',
+          message: 'Queue entry cancelled.',
+        });
+      }
+    }
+
+    // 2. Fetch all active entries for this doctor today to update dynamic queue and predictions
+    const activeResult = await pool.query(
+      `SELECT qe.*, u.name as doctor_name, dep.name as department_name
+       FROM queue_entries qe
+       JOIN doctors d ON qe.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.doctor_id = $1 AND qe.queue_date = $2
+         AND qe.status IN ('IN_CONSULTATION', 'CALLED', 'WAITING')
+       ORDER BY
+         CASE
+           WHEN qe.status = 'IN_CONSULTATION' THEN 1
+           WHEN qe.status = 'CALLED' THEN 2
+           ELSE 3
+         END,
+         qe.created_at ASC`,
+      [doctorId, today]
+    );
+
+    const activeEntries = activeResult.rows;
+    const currentServing = activeEntries.find(e => e.status === 'IN_CONSULTATION') ||
+                           activeEntries.find(e => e.status === 'CALLED') || null;
+    const currentToken = currentServing ? currentServing.token_number : null;
+
+    // 3. Update dynamic position, approaching status, and ML predictions for waiting patients
+    for (let i = 0; i < activeEntries.length; i++) {
+      const entry = activeEntries[i];
+      if (entry.status !== 'WAITING') continue;
+
+      const position = i + 1;
+      const patientsAhead = i;
+      const isApproaching = patientsAhead <= APPROACHING_THRESHOLD;
+
+      // Approaching turn notification deduplication: emit ONLY if approaching_notified_at is not set
+      if (isApproaching && !entry.approaching_notified_at) {
+        try {
+          await pool.query('UPDATE queue_entries SET approaching_notified_at = NOW() WHERE id = $1', [entry.id]);
+          entry.approaching_notified_at = new Date();
+        } catch (notifErr) { /* ignore */ }
+
+        emitToPatient(entry.queue_access_token, SOCKET_EVENTS.PATIENT_APPROACHING, {
+          token: entry.token_number,
+          patientsAhead,
+          position,
+          message: `Your turn is approaching! You have ${patientsAhead} patient${patientsAhead === 1 ? '' : 's'} ahead. Please return to the consultation area.`,
+        });
+        emitToPatient(entry.queue_access_token, SOCKET_EVENTS.NOTIFICATION_CREATED, {
+          type: 'APPROACHING',
+          title: 'Turn Approaching',
+          token: entry.token_number,
+          patientsAhead,
+          message: `Your turn is approaching! ${patientsAhead} patient${patientsAhead === 1 ? '' : 's'} ahead.`,
+        });
+      }
+
+      // Recompute ML prediction with up-to-date queue state
+      const prediction = await computeQueuePrediction(entry, activeEntries);
+
+      // Emit updated real-time state to patient pass
+      emitToPatient(entry.queue_access_token, SOCKET_EVENTS.WAIT_TIME_UPDATED, {
+        token: entry.token_number,
+        status: entry.status,
+        doctor: entry.doctor_name,
+        department: entry.department_name,
+        currentToken,
+        position,
+        patientsAhead,
+        isApproaching,
+        approachingThreshold: APPROACHING_THRESHOLD,
+        queueDate: entry.queue_date,
+        prediction,
+      });
+    }
+
+    // 4. Broadcast general queue update to staff and admin rooms
+    broadcastQueueUpdate({
+      departmentId,
+      doctorId,
+      event: SOCKET_EVENTS.QUEUE_UPDATED,
+      data: {
+        doctorId,
+        departmentId,
+        action,
+        currentToken,
+        activeCount: activeEntries.length,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (syncErr) {
+    console.error('[Socket] syncDoctorQueueRealtime error:', syncErr);
+  }
+}
+
+
+/**
  * GET /api/queue/access/:accessToken
  * Public endpoint: Returns real-time queue position and AI predicted wait time for a patient.
  * Does NOT expose sensitive patient data, phone numbers, or internal database IDs.
@@ -391,16 +552,21 @@ router.post('/token', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
 
     await client.query('COMMIT');
 
+    const createdData = {
+      ...result.rows[0],
+      patient_name: patientCheck.rows[0].name,
+      doctor_name: doctorCheck.rows[0].doctor_name,
+      department_name: doctorCheck.rows[0].department_name,
+      queue_access_token: queueAccessToken,
+    };
+
+    // Phase 4: Real-time broadcast and initial AI prediction sync
+    syncDoctorQueueRealtime(doctor_id, department_id, createdData, 'NEW_PATIENT');
+
     res.status(201).json({
       status: 'ok',
       message: 'Token generated successfully',
-      data: {
-        ...result.rows[0],
-        patient_name: patientCheck.rows[0].name,
-        doctor_name: doctorCheck.rows[0].doctor_name,
-        department_name: doctorCheck.rows[0].department_name,
-        queue_access_token: queueAccessToken,
-      },
+      data: createdData,
     });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -726,13 +892,16 @@ async function transitionStatus(req, res, targetStatus, timestampField = null) {
 
     const result = await pool.query(query, params);
 
-    // Phase 3: When consultation starts, backfill actual wait and calculate error
+    // Phase 3 & 4 Telemetry:
+    // 1. When consultation starts: record actual wait minutes & prediction error
     if (targetStatus === 'IN_CONSULTATION') {
       try {
         const startTs = result.rows[0].consultation_started_at;
         const createdTs = result.rows[0].created_at;
         if (startTs && createdTs) {
           const actualWait = Math.max(0.5, Math.round(((new Date(startTs) - new Date(createdTs)) / 60000) * 10) / 10);
+          
+          // Backfill predictions table
           await pool.query(
             `UPDATE predictions
              SET actual_wait_minutes = $1,
@@ -740,9 +909,40 @@ async function transitionStatus(req, res, targetStatus, timestampField = null) {
              WHERE queue_entry_id = $2 AND actual_wait_minutes IS NULL`,
             [actualWait, id]
           );
+
+          // Update queue_entries actual wait and prediction error
+          await pool.query(
+            `UPDATE queue_entries
+             SET actual_wait_minutes = $1,
+                 prediction_error_minutes = (
+                   SELECT ROUND(ABS(prediction_error)::numeric, 1)
+                   FROM predictions
+                   WHERE queue_entry_id = $2
+                   ORDER BY created_at DESC LIMIT 1
+                 )
+             WHERE id = $2`,
+            [actualWait, id]
+          );
         }
       } catch (backfillErr) {
         console.warn('[Queue] Prediction actual wait backfill warning:', backfillErr.message);
+      }
+    }
+
+    // 2. When consultation completes: record consultation duration
+    if (targetStatus === 'COMPLETED') {
+      try {
+        const completedTs = result.rows[0].consultation_completed_at;
+        const startedTs = result.rows[0].consultation_started_at;
+        if (completedTs && startedTs) {
+          const duration = Math.max(0.5, Math.round(((new Date(completedTs) - new Date(startedTs)) / 60000) * 10) / 10);
+          await pool.query(
+            `UPDATE queue_entries SET consultation_duration_minutes = $1 WHERE id = $2`,
+            [duration, id]
+          );
+        }
+      } catch (durErr) {
+        console.warn('[Queue] Consultation duration calculation warning:', durErr.message);
       }
     }
 
@@ -761,16 +961,56 @@ async function transitionStatus(req, res, targetStatus, timestampField = null) {
       [id]
     );
 
+    const updatedEntry = fullResult.rows[0];
+
+    // Phase 4: Trigger real-time Socket.IO broadcasts & ML updates across connected clients
+    syncDoctorQueueRealtime(entry.doctor_id, entry.department_id, updatedEntry, targetStatus);
+
     res.json({
       status: 'ok',
       message: `Patient status changed to ${targetStatus}`,
-      data: fullResult.rows[0],
+      data: updatedEntry,
     });
   } catch (err) {
     console.error(`Queue ${targetStatus} error:`, err);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 }
+
+/**
+ * GET /api/queue/:id/live
+ * Authoritative live state of a queue entry for staff & doctor dashboard.
+ */
+router.get('/:id/live', authorize('DOCTOR', 'ADMIN', 'RECEPTIONIST'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const entryResult = await pool.query(
+      `SELECT qe.*, p.name as patient_name, u.name as doctor_name, dep.name as department_name
+       FROM queue_entries qe
+       JOIN patients p ON qe.patient_id = p.id
+       JOIN doctors d ON qe.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.id = $1`,
+      [id]
+    );
+    if (entryResult.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+    }
+    const entry = entryResult.rows[0];
+    const prediction = await computeQueuePrediction(entry);
+    res.json({
+      status: 'ok',
+      data: {
+        ...entry,
+        prediction,
+      },
+    });
+  } catch (err) {
+    console.error('Get live queue entry error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+});
 
 /**
  * POST /api/queue/:id/call

@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config({ path: '../.env' });
+import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -15,9 +16,12 @@ import doctorRoutes from './routes/doctors.js';
 import patientRoutes from './routes/patients.js';
 import queueRoutes, { getPatientQueueAccess, getPatientPrediction } from './routes/queue.js';
 import userRoutes from './routes/users.js';
+import analyticsRoutes from './routes/analytics.js';
 import { autoMigrate } from './db/autoMigrate.js';
+import { initSocket } from './socket/index.js';
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
@@ -74,12 +78,16 @@ app.use('/api/doctors', authenticate, doctorRoutes);
 app.use('/api/patients', authenticate, patientRoutes);
 app.use('/api/queue', authenticate, queueRoutes);
 app.use('/api/users', authenticate, userRoutes);
+app.use('/api/analytics', authenticate, analyticsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, async () => {
-  console.log(`🚀 Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT}`);
+// ── Initialize Socket.IO ──────────────────────────
+initSocket(server, allowedOrigins);
+
+server.listen(PORT, async () => {
+  console.log(`🚀 Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
   if (process.env.DATABASE_URL) {
     const ok = await testConnection();
     if (ok) await autoMigrate();
@@ -88,4 +96,5 @@ app.listen(PORT, async () => {
   }
 });
 
+export { app, server };
 export default app;

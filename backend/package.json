@@ -9,7 +9,7 @@
     "start": "node src/app.js",
     "build": "npm run migrate",
     "migrate": "node src/db/migrate.js",
-    "test": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/api.test.js"
+    "test": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -19,10 +19,12 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "socket.io": "^4.8.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "socket.io-client": "^4.8.4"
   },
   "engines": {
     "node": ">=20.0.0"
