@@ -4,6 +4,7 @@ import './App.css';
 
 // Pages
 import Login from './pages/auth/Login';
+import PatientQueue from './pages/patient/PatientQueue';
 import DashboardLayout from './layouts/DashboardLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import ReceptionistDashboard from './pages/receptionist/Dashboard';
@@ -13,6 +14,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      
+      {/* Public Patient Virtual Queue Tracker (No authentication required) */}
+      <Route path="/queue/:accessToken" element={<PatientQueue />} />
       
       {/* Protected Routes */}
       <Route element={<DashboardLayout allowedRoles={[]} />}>
