@@ -11,38 +11,101 @@
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────┐
-│                  Client                       │
-│              React.js (Vite)                  │
-│          Deployed on Render                   │
-└──────────────────┬───────────────────────────┘
-                   │ HTTPS
-                   ▼
-┌──────────────────────────────────────────────┐
-│              Backend API                      │
-│          Express.js (Node.js)                 │
-│          Deployed on Render                   │
-└──────────┬───────────────────┬───────────────┘
-           │                   │
-           ▼                   ▼
-┌──────────────────┐  ┌────────────────────────┐
-│   PostgreSQL     │  │  ML Service (Phase 3)  │
-│   (Supabase)     │  │  Python + FastAPI       │
-└──────────────────┘  └────────────────────────┘
+                    ┌──────────────────────────────────────────────┐
+                    │               React Frontend                 │
+                    │   • Patient Virtual Pass  • Doctor Desk      │
+                    │   • Receptionist Console  • Admin Analytics  │
+                    └──────────────────────┬───────────────────────┘
+                                           │ REST API + Socket.IO (WSS)
+                                           ▼
+                    ┌──────────────────────────────────────────────┐
+                    │           Node / Express Backend             │
+                    │   • State Machine         • Room Router      │
+                    │   • JWT & Token Security  • Socket Server    │
+                    │   • ML Client Orchestrator                   │
+                    └──────────────┬────────────────┬──────────────┘
+                                   │                │
+                                   ▼                ▼
+                    ┌──────────────────────┐  ┌────────────────────────┐
+                    │ PostgreSQL Database  │  │   Python ML Service    │
+                    │ (Supabase Cloud)     │  │   (FastAPI / Scikit)   │
+                    │ • Telemetry Tracking │  │ • Gradient Boosting    │
+                    │ • Queue Entries      │  │ • 94.6% Accuracy / MAE │
+                    │ • Prediction Audits  │  │ • Baseline Fallback    │
+                    └──────────────────────┘  └────────────────────────┘
 ```
 
 ## 🛠️ Technology Stack
 
-| Layer       | Technology                |
-|-------------|---------------------------|
-| Frontend    | React.js + Vite           |
-| Backend     | Node.js + Express.js      |
-| Database    | PostgreSQL (Supabase)     |
-| ML Service  | Python + FastAPI (Phase 3)|
-| Real-Time   | Socket.IO (Phase 4)       |
-| Deployment  | Render (Frontend + Backend)|
-| CI/CD       | GitHub Actions            |
-| Containers  | Docker + Docker Compose   |
+| Layer       | Technology | Role |
+|-------------|------------|------|
+| Frontend    | React.js (Vite) + Tailwind CSS | Responsive dashboards, live connection badges, toasts |
+| Backend     | Node.js + Express.js | Authoritative REST API, State Machine, Telemetry |
+| Real-Time   | Socket.IO v4 | Instant bi-directional synchronization and room isolation |
+| Database    | PostgreSQL (Supabase Cloud) | Normalized persistence, telemetry & audit indices |
+| ML Service  | Python 3.12 + FastAPI + Scikit-Learn | Wait-time prediction (Gradient Boosting Regressor) |
+| Notifications| Web Notifications API + In-App Toasts | Idempotent approaching and your-turn alerts |
+| Containers  | Docker & Docker Compose | Multi-container local orchestration |
+| Testing     | Node Test Suites & Puppeteer E2E | Phase 2, Phase 3, Phase 4 & Responsive UI audits |
+
+---
+
+## ⚡ Phase 4 — Real-Time Intelligent Queue Management
+
+Phase 4 elevates Invisible Queue AI into an autonomous, real-time virtual hospital queue:
+
+### 1. Socket.IO Room-Based Architecture
+To ensure zero data leaks between waiting patients, Socket.IO uses strict room segmentation:
+- `patient:{queueAccessToken}`: Cryptographically restricted room receiving ONLY that patient's status, dynamic queue position, and predictions.
+- `doctor:{doctorId}`: Delivers incoming queue updates, called patient info, and consultation workflows.
+- `department:{departmentId}`: Aggregates department-wide queue shifts for desk staff.
+- `admin`: Broadcasts hospital-wide queue volumes and live department statuses.
+
+### 2. Standardized Real-Time Event Catalog
+| Event | Direction | Trigger / Payload |
+|---|---|---|
+| `queue.updated` | Server → All | Queue shift occurred; triggers client reconciliation |
+| `queue.token_called` | Server → Patient/Doc | Doctor calls token; contains token, doc name, room |
+| `queue.consultation_started` | Server → Patient/Doc | Patient enters room; logs consultation start time |
+| `queue.consultation_completed`| Server → Patient/Doc | Doctor completes visit; records telemetry & durations |
+| `queue.patient_no_show` | Server → Room | Patient failed to appear; removes from active line |
+| `queue.patient_cancelled` | Server → Room | Ticket cancelled by patient or desk |
+| `queue.wait_time_updated` | Server → Patient | ML-computed waiting-time range update |
+| `queue.patient_approaching` | Server → Patient | Triggered when `patientsAhead <= APPROACHING_THRESHOLD` (default 2) |
+| `queue.patient_turn` | Server → Patient | High-priority your-turn call with audible/visual alert |
+| `notification.created` | Server → Client | Generic in-app notification payload |
+
+### 3. Queue State Machine
+Strict server-side validation enforces sequential patient progressions and prohibits illegal skips:
+```
+WAITING ──────► CALLED ──────► IN_CONSULTATION ──────► COMPLETED (Terminal)
+   │               │
+   ├───────────────┼─────────► NO_SHOW (Terminal)
+   │
+   └─────────────────────────► CANCELLED (Terminal)
+```
+- **Prohibited transitions**: `COMPLETED -> WAITING`, `NO_SHOW -> IN_CONSULTATION`, `CANCELLED -> COMPLETED`.
+- Invalid status updates are rejected with `400 Bad Request`.
+
+### 4. Dynamic Queue Calculation & Privacy
+- Waiting position and `patientsAhead` are computed dynamically from active entries created before the target token.
+- No public API or socket event exposes full names, phone numbers, or database IDs of other patients.
+- Patients receive only: `token`, `status`, `currentToken`, `patientsAhead`, `position`, and `predictedWaitRange`.
+
+### 5. Idempotent Patient Notification System
+- **Approaching Alert**: Dispatched once when `patientsAhead <= 2`. Stamped with `approaching_notified_at`.
+- **Your Turn Alert**: Dispatched upon doctor calling token. Stamped with `turn_notified_at`.
+- Both in-app toasts and browser Web Notification API alerts check client-side deduplication keys so repeated socket reconnects never spam the patient.
+
+### 6. Real ML Telemetry & Hospital Analytics
+- On `IN_CONSULTATION`, backend computes:
+  $$\text{actual\_wait\_minutes} = \frac{\text{consultation\_started\_at} - \text{created\_at}}{60000}$$
+  $$\text{prediction\_error\_minutes} = |\text{predicted\_wait\_minutes} - \text{actual\_wait\_minutes}|$$
+- On `COMPLETED`, backend computes:
+  $$\text{consultation\_duration\_minutes} = \frac{\text{completed\_at} - \text{consultation\_started\_at}}{60000}$$
+- **Admin Analytics Dashboard** (`/api/analytics/overview` and `/api/analytics/live-status`):
+  - Real metrics: Patients served today, average wait time, average consultation duration, no-shows, cancellations, model MAE.
+  - Zero fake numbers: Displays "Collecting more consultation telemetry..." if historical sample size is too low (< 3).
 
 ---
 
@@ -51,205 +114,82 @@
 ### Prerequisites
 
 - **Node.js** ≥ 20.x
+- **Python** ≥ 3.10
 - **npm** ≥ 10.x
 - **Git**
-- **Docker** (optional, for containerized development)
 
 ### Quick Start
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository & install dependencies
 git clone https://github.com/kanth891/invisible-queue-ai.git
 cd invisible-queue-ai
+npm run install:all
 
-# 2. Run setup script
-bash scripts/setup.sh
+# 2. Configure .env
+cp .env.example .env
 
-# 3. Configure environment variables
-#    Edit .env with your Supabase DATABASE_URL
-nano .env
+# 3. Start Python ML Service (port 8000)
+cd ml-service
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
 
-# 4. Start development servers
+# 4. Start Node.js Backend with Socket.IO (port 5000)
+cd ../backend
+npm run dev &
+
+# 5. Start Vite React Frontend (port 5173)
+cd ../frontend
 npm run dev
 ```
 
-### Manual Setup
+---
+
+## 🧪 Testing & Verification
+
+Run the comprehensive test suites:
 
 ```bash
-# Install all dependencies
-npm run install:all
+# Run all backend & real-time test suites (Phases 2, 3, and 4)
+cd backend
+npm test
 
-# Start backend (port 5000)
-cd backend && npm run dev
+# Run End-to-End Multi-Client Phase 4 Simulation
+node ../scripts/test_phase4_e2e.js
 
-# Start frontend (port 5173) — in another terminal
-cd frontend && npm run dev
-```
-
-### Docker
-
-```bash
-# Build and run all services
-docker compose up --build
-
-# Stop services
-docker compose down
+# Run Full Viewport Responsive Audit (320px to 1920px)
+node ../scripts/audit_responsive.js
 ```
 
 ---
 
 ## 🔐 Environment Variables
 
-Create a `.env` file in the project root by copying `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-| Variable       | Description                              | Required |
-|----------------|------------------------------------------|----------|
-| `NODE_ENV`     | Environment (`development` / `production`) | Yes    |
-| `PORT`         | Backend server port (default: 5000)      | Yes      |
-| `DATABASE_URL` | Supabase PostgreSQL connection string    | Yes      |
-| `JWT_SECRET`   | Secret key for JWT token signing         | Yes      |
-| `FRONTEND_URL` | Frontend URL for CORS                    | Yes      |
-| `API_URL`      | Backend API URL                          | Yes      |
-| `CORS_ORIGIN`  | Allowed CORS origins (comma-separated)   | Yes      |
-
-> ⚠️ **Never commit `.env` to version control.** The `.gitignore` is configured to prevent this.
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Backend server port | `5000` |
+| `DATABASE_URL` | Supabase PostgreSQL URI | *(Required)* |
+| `JWT_SECRET` | Secret key for JWT staff tokens | *(Required)* |
+| `FRONTEND_URL` | Allowed frontend origin for CORS | `http://localhost:5173` |
+| `ML_SERVICE_URL`| Python FastAPI ML service URL | `http://localhost:8000` |
+| `APPROACHING_THRESHOLD` | Number of patients ahead triggering approaching alert | `2` |
+| `VITE_SOCKET_URL` | Frontend Socket.IO connection target | `http://localhost:5000` |
 
 ---
 
-## 🌿 Git Workflow
+## 🗺️ Project Status
 
-We follow a structured branching strategy:
-
-```
-feature/your-feature
-        ↓
-    develop          ← active development
-        ↓
-    testing          ← pre-release validation
-        ↓
-      main           ← production deployments
-```
-
-### Branch Naming
-
-| Branch Pattern             | Purpose                    |
-|----------------------------|----------------------------|
-| `main`                     | Production-ready code      |
-| `develop`                  | Active development         |
-| `phase-1-foundation`       | Phase 1 features           |
-| `phase-2-virtual-queue`    | Phase 2 features           |
-| `phase-3-ai`               | Phase 3 ML integration     |
-| `phase-4-realtime`         | Phase 4 real-time features |
-
----
-
-## 🌐 Deployment
-
-### Frontend → Render (Static Site)
-
-- **Auto-deploys** from `main` branch
-- **Root Directory**: `frontend`
-- **Build Command**: `npm install && npm run build`
-- **Publish Directory**: `dist`
-- **Environment Variable**: `VITE_API_URL` → Backend URL
-
-### Backend → Render (Web Service)
-
-- **Auto-deploys** from `main` branch
-- **Root Directory**: `backend`
-- **Build Command**: `npm install`
-- **Start Command**: `node src/app.js`
-- **Health Check**: `GET /api/health`
-- **Environment Variables**: Set via Render Dashboard
-
-### Database → Supabase
-
-- **Cloud PostgreSQL** — no self-hosting required
-- **Connection**: via `DATABASE_URL` environment variable
-
-### Production URLs
-
-| Service  | URL |
-|----------|-----|
-| Frontend | https://invisible-queue-ai-frontend.onrender.com |
-| Backend  | https://invisible-queue-ai.onrender.com |
-
----
-
-## 📋 API Endpoints
-
-### Infrastructure
-
-| Method | Endpoint       | Description                       |
-|--------|----------------|-----------------------------------|
-| GET    | `/`            | API information                   |
-| GET    | `/api/health`  | Health check with DB status       |
-
-*More endpoints will be added in Phase 1+.*
-
----
-
-## 🗺️ Development Phases
-
-| Phase | Name                        | Status      |
-|-------|-----------------------------|-------------|
-| 0     | Infrastructure Setup        | ✅ Complete |
-| 1     | Hospital Queue Foundation   | 🔜 Next     |
-| 2     | Virtual / Invisible Queue   | ⏳ Planned  |
-| 3     | AI Waiting-Time Prediction  | ⏳ Planned  |
-| 4     | Real-Time Updates & Analytics| ⏳ Planned |
-
----
-
-## 📁 Project Structure
-
-```
-invisible-queue-ai/
-├── frontend/                # React.js (Vite) frontend
-│   ├── src/
-│   │   ├── App.jsx         # Main application component
-│   │   ├── App.css         # Component styles
-│   │   ├── index.css       # Global styles & design tokens
-│   │   └── main.jsx        # React entry point
-│   ├── public/             # Static assets
-│   ├── Dockerfile
-│   └── package.json
-│
-├── backend/                 # Express.js backend API
-│   ├── src/
-│   │   ├── app.js          # Application entry point
-│   │   ├── config/         # Environment configuration
-│   │   ├── controllers/    # Route handlers
-│   │   ├── db/             # Database connection
-│   │   ├── middleware/     # Express middleware
-│   │   ├── routes/         # API routes
-│   │   └── services/       # Business logic
-│   ├── Dockerfile
-│   └── package.json
-│
-├── ml-service/              # Python ML service (Phase 3)
-│   ├── README.md
-│   └── requirements.txt
-│
-├── docs/                    # Project documentation
-├── scripts/                 # Helper scripts
-│
-├── .github/workflows/       # CI/CD pipelines
-├── .env.example             # Environment variables template
-├── docker-compose.yml       # Local Docker setup
-└── README.md
-```
+| Phase | Milestone | Status |
+|---|---|---|
+| 0 | Cloud Infrastructure & CI/CD Pipeline | ✅ Complete |
+| 1 | Hospital Core Queue & Role-Based Auth | ✅ Complete |
+| 2 | Virtual Invisible Queue & QR Pass | ✅ Complete |
+| 3 | AI Waiting-Time Prediction (Gradient Boosting) | ✅ Complete |
+| 4 | Real-Time Synchronization, Notifications & Analytics | ✅ Complete |
 
 ---
 
 ## 📝 License
+MIT License — Built as a B.Tech CSE Final Year Project (2026).
 
-MIT
-
----
-
-*Built as a B.Tech CSE Final Year Project — 2026*
