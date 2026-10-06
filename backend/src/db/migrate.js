@@ -167,7 +167,7 @@ async function seed(client) {
     hash('doctor123'),
   ]);
 
-  console.log('✅ Users seeded');
+  console.log('[OK] Users seeded');
 
   // ── Departments ────────────────────────────────
   const deptResult = await client.query(`
@@ -179,7 +179,7 @@ async function seed(client) {
     RETURNING id, name, code
   `);
 
-  console.log('✅ Departments seeded');
+  console.log('[OK] Departments seeded');
 
   // Map user IDs by email
   const userMap = {};
@@ -207,7 +207,7 @@ async function seed(client) {
     deptMap['ORT'],
   ]);
 
-  console.log('✅ Doctors seeded');
+  console.log('[OK] Doctors seeded');
 
   // ── Patients ───────────────────────────────────
   const patientResult = await client.query(`
@@ -225,7 +225,7 @@ async function seed(client) {
     RETURNING id
   `);
 
-  console.log('✅ Patients seeded');
+  console.log('[OK] Patients seeded');
 
   // ── Queue Entries (demo data for today) ────────
   const doctorIds = doctorResult.rows.map(d => d.id);
@@ -259,30 +259,30 @@ async function seed(client) {
     `, [q.pid, q.did, q.depId, q.token, accessToken, q.status, q.createdAt, q.calledAt, q.startedAt, q.completedAt]);
   }
 
-  console.log('✅ Queue entries seeded');
+  console.log('[OK] Queue entries seeded');
 }
 
 // ── Run Migration ──────────────────────────────────
 async function migrate() {
   const client = await pool.connect();
   try {
-    console.log('🚀 Running Phase 1 database migration...\n');
+    console.log('[START] Running Phase 1 database migration...\n');
 
     await client.query('BEGIN');
     await client.query(SCHEMA_SQL);
-    console.log('✅ Schema created successfully\n');
+    console.log('[OK] Schema created successfully\n');
 
     await seed(client);
     await client.query('COMMIT');
 
-    console.log('\n✅ Migration complete!');
-    console.log('\n📋 Demo Credentials:');
+    console.log('\n[OK] Migration complete!');
+    console.log('\n[CREDENTIALS] Demo Credentials:');
     console.log('   Admin:        admin@hospital.com        / admin123');
     console.log('   Receptionist: receptionist1@hospital.com / recep123');
     console.log('   Doctor:       dr.ravi@hospital.com      / doctor123');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('❌ Migration failed:', err.message);
+    console.error('[ERROR] Migration failed:', err.message);
     throw err;
   } finally {
     client.release();

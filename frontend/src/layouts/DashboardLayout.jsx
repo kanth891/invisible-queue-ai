@@ -171,11 +171,11 @@ export default function DashboardLayout({ allowedRoles = [] }) {
                 Active Workspace
               </div>
               <div className="mobile-drawer__nav-item mobile-drawer__nav-item--active">
-                <span>●</span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0D9488', display: 'inline-block', flexShrink: 0 }} />
                 <span>{user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}</span>
               </div>
               <div className="mobile-drawer__nav-item" style={{ opacity: 0.7 }}>
-                <span>○</span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', border: '1.5px solid #94A3B8', display: 'inline-block', flexShrink: 0 }} />
                 <span>{user.role === 'RECEPTIONIST' ? 'Daily Register' : user.role === 'DOCTOR' ? 'Patient Queue' : 'Departments & Staff'}</span>
               </div>
             </div>

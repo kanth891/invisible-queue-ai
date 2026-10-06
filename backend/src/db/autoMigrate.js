@@ -106,7 +106,7 @@ export async function autoMigrate() {
     // Check if seed users exist
     const userCount = await client.query('SELECT COUNT(*) FROM users');
     if (parseInt(userCount.rows[0].count) === 0) {
-      console.log('🌱 Seeding initial hospital data into database...');
+      console.log('[SEED] Seeding initial hospital data into database...');
       const hash = (pw) => bcrypt.hashSync(pw, 10);
       
       const usersRes = await client.query(`
@@ -133,11 +133,11 @@ export async function autoMigrate() {
         VALUES ($1, $2, 'General Physician')
       `, [drRavi.id, gmDept.id]);
 
-      console.log('✅ Initial hospital data seeded successfully');
+      console.log('[OK] Initial hospital data seeded successfully');
     }
 
     await client.query('COMMIT');
-    console.log('✅ Database schema verified & ready');
+    console.log('[OK] Database schema verified & ready');
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('AutoMigrate error:', err.message);

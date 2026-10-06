@@ -764,7 +764,7 @@ app.get('/api/health', (req, res) => {
 });
 
 export const runningServer = server.listen(PORT, () => {
-  console.log(`🚀 E2E Test Backend + Socket.IO running on http://localhost:${PORT}`);
+  console.log(`[START] E2E Test Backend + Socket.IO running on http://localhost:${PORT}`);
 });
 
 export default app;

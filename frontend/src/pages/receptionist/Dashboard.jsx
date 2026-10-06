@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { queueAPI, departmentsAPI, doctorsAPI, patientsAPI } from '../../services/api';
 import socketService, { SOCKET_EVENTS } from '../../services/socket';
-import { CopyIcon, PrinterIcon, QrCodeIcon, AlertTriangleIcon, CheckCircleIcon, CloseIcon } from '../../components/Icons';
+import { CopyIcon, PrinterIcon, QrCodeIcon, AlertTriangleIcon, CheckCircleIcon, CloseIcon, RefreshIcon } from '../../components/Icons';
 
 export default function ReceptionistDashboard() {
   const [queue, setQueue] = useState([]);
@@ -522,9 +522,10 @@ export default function ReceptionistDashboard() {
             <button
               onClick={fetchData}
               className="btn-secondary"
-              style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', minHeight: '36px' }}
+              style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', minHeight: '36px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
-              ↻ Refresh
+              <RefreshIcon size={13} color="currentColor" />
+              <span>Refresh</span>
             </button>
           </div>
 

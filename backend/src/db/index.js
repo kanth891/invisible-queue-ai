@@ -20,7 +20,7 @@ const pool = new Pool({
 
 // Log pool errors (don't crash the server)
 pool.on('error', (err) => {
-  console.error('❌ Unexpected PostgreSQL pool error:', err.message);
+  console.error('[ERROR] Unexpected PostgreSQL pool error:', err.message);
 });
 
 /**
@@ -32,10 +32,10 @@ export async function testConnection() {
     const client = await pool.connect();
     const result = await client.query('SELECT NOW() AS current_time');
     client.release();
-    console.log('✅ Database connected at:', result.rows[0].current_time);
+    console.log('[OK] Database connected at:', result.rows[0].current_time);
     return true;
   } catch (err) {
-    console.error('❌ Database connection failed:', err.message);
+    console.error('[ERROR] Database connection failed:', err.message);
     return false;
   }
 }

@@ -3,7 +3,18 @@ import { useParams } from 'react-router-dom';
 import { queueAPI } from '../../services/api';
 import socketService, { SOCKET_EVENTS } from '../../services/socket';
 import { useNotifications } from '../../context/NotificationContext';
-import { MedicalCrossIcon, SearchIcon, StethoscopeIcon, CheckCircleIcon, ClockIcon, PulseIcon } from '../../components/Icons';
+import { 
+  MedicalCrossIcon, 
+  SearchIcon, 
+  StethoscopeIcon, 
+  CheckCircleIcon, 
+  ClockIcon, 
+  PulseIcon, 
+  AlertTriangleIcon, 
+  XCircleIcon, 
+  RefreshIcon, 
+  BellIcon 
+} from '../../components/Icons';
 
 const FALLBACK_POLL_INTERVAL_MS = 15000;
 
@@ -354,6 +365,50 @@ export default function PatientQueue() {
           </div>
         )}
 
+        {/* 5. Consultation Cancelled */}
+        {data.status === 'CANCELLED' && (
+          <div
+            style={{
+              background: '#FEF2F2',
+              border: '1px solid #FECACA',
+              borderRadius: '8px',
+              padding: '0.9rem',
+              marginBottom: '1.15rem',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.92rem', fontWeight: '700', color: '#991B1B', marginBottom: '0.2rem' }}>
+              <XCircleIcon size={16} color="#DC2626" />
+              <span>Consultation Token Cancelled</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#7F1D1D', lineHeight: 1.45 }}>
+              This token has been cancelled. If this was done in error or you need assistance, please speak with the outpatient reception desk.
+            </div>
+          </div>
+        )}
+
+        {/* 6. Marked as No-Show */}
+        {data.status === 'NO_SHOW' && (
+          <div
+            style={{
+              background: '#FFFBEB',
+              border: '1px solid #FDE68A',
+              borderLeft: '4px solid #F59E0B',
+              borderRadius: '8px',
+              padding: '0.85rem 0.9rem',
+              marginBottom: '1.15rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.88rem', fontWeight: '700', color: '#92400E', marginBottom: '0.2rem' }}>
+              <AlertTriangleIcon size={16} color="#D97706" />
+              <span>Marked as No-Show</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#78350F', lineHeight: 1.45 }}>
+              You were not present when your token was called. Please check in with reception to rejoin the queue or receive a new token.
+            </div>
+          </div>
+        )}
+
         {/* Normal Waiting Status (When not yet approaching) */}
         {data.status === 'WAITING' && !data.isApproaching && (
           <div
@@ -484,7 +539,7 @@ export default function PatientQueue() {
               fontWeight: '500',
             }}
           >
-            <span style={{ color: '#10B981' }}>✓</span>
+            <CheckCircleIcon size={14} color="#10B981" />
             <span>Live device alerts enabled</span>
           </div>
         )}
@@ -608,10 +663,14 @@ export default function PatientQueue() {
               fontWeight: '600',
               padding: '0.4rem 0.6rem',
               minHeight: '36px',
-              touchAction: 'manipulation'
+              touchAction: 'manipulation',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem'
             }}
           >
-            {refreshing ? 'Refreshing...' : '↻ Refresh'}
+            <RefreshIcon size={12} color="#0D9488" />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
         </div>
 

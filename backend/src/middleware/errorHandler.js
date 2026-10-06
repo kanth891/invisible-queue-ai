@@ -3,7 +3,7 @@
  * Catches unhandled errors and returns a structured JSON response.
  */
 export function errorHandler(err, req, res, next) {
-  console.error('❌ Unhandled error:', err.stack || err.message);
+  console.error('[ERROR] Unhandled error:', err.stack || err.message);
 
   const statusCode = err.statusCode || 500;
   const message =

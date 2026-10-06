@@ -169,7 +169,10 @@ export default function DoctorDashboard() {
                   fontWeight: '700'
                 }}
               >
-                {currentPatient.status === 'CALLED' ? '● CALLED (Waiting Entry)' : '● IN CONSULTATION'}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: currentPatient.status === 'CALLED' ? '#1D4ED8' : '#0F766E', display: 'inline-block' }} />
+                  <span>{currentPatient.status === 'CALLED' ? 'CALLED (Waiting Entry)' : 'IN CONSULTATION'}</span>
+                </span>
               </span>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { CloseIcon } from '../components/Icons';
 
 const NotificationContext = createContext(null);
 
@@ -181,16 +182,17 @@ export function NotificationProvider({ children }) {
                     border: 'none',
                     color: '#94A3B8',
                     cursor: 'pointer',
-                    fontSize: '1rem',
-                    lineHeight: '1',
                     padding: '0.2rem 0.4rem',
                     borderRadius: '4px',
                     flexShrink: 0,
                     minHeight: '28px',
                     minWidth: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  ✕
+                  <CloseIcon size={14} color="#94A3B8" />
                 </button>
               </div>
             );

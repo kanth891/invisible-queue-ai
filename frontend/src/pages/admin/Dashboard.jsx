@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { queueAPI, departmentsAPI, doctorsAPI, usersAPI, analyticsAPI } from '../../services/api';
 import socketService, { SOCKET_EVENTS } from '../../services/socket';
-import { BarChartIcon, BuildingIcon, StethoscopeIcon, UsersIcon, PulseIcon, ClockIcon } from '../../components/Icons';
+import { BarChartIcon, BuildingIcon, StethoscopeIcon, UsersIcon, PulseIcon, ClockIcon, RefreshIcon } from '../../components/Icons';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -129,9 +129,10 @@ export default function AdminDashboard() {
           <button
             onClick={fetchData}
             className="btn-secondary"
-            style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', minHeight: '38px' }}
+            style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', minHeight: '38px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
           >
-            ↻ Refresh Data
+            <RefreshIcon size={13} color="currentColor" />
+            <span>Refresh Data</span>
           </button>
         </div>
       </div>
@@ -267,7 +268,12 @@ export default function AdminDashboard() {
                         fontWeight: '700',
                       }}
                     >
-                      {dept.status === 'Active' ? '● Active' : 'Idle'}
+                      {dept.status === 'Active' ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0F766E', display: 'inline-block' }} />
+                          <span>Active</span>
+                        </span>
+                      ) : 'Idle'}
                     </span>
                   </div>
 

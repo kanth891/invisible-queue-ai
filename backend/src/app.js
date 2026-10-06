@@ -87,12 +87,12 @@ app.use(errorHandler);
 initSocket(server, allowedOrigins);
 
 server.listen(PORT, async () => {
-  console.log(`🚀 Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
+  console.log(`[START] Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
   if (process.env.DATABASE_URL) {
     const ok = await testConnection();
     if (ok) await autoMigrate();
   } else {
-    console.warn('⚠️  DATABASE_URL not set');
+    console.warn('[WARN] DATABASE_URL not set');
   }
 });
 
