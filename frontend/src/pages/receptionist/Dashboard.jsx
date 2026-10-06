@@ -198,7 +198,7 @@ export default function ReceptionistDashboard() {
       )}
 
       {/* ── Main Two-Column Layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="receptionist-layout">
         
         {/* Left Column: Intake Registration */}
         <div className="card" style={{ padding: '1.35rem' }}>
@@ -227,7 +227,7 @@ export default function ReceptionistDashboard() {
                 </span>
                 <button
                   onClick={() => setMessage(null)}
-                  style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', minWidth: '32px', minHeight: '32px', justifyContent: 'center' }}
                   title="Dismiss"
                 >
                   <CloseIcon size={14} color="#64748B" />
@@ -239,10 +239,10 @@ export default function ReceptionistDashboard() {
                 <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748B', fontWeight: '600' }}>
                   Outpatient Token
                 </div>
-                <div style={{ fontSize: '2.4rem', fontWeight: '900', color: '#0F5147', lineHeight: 1.1, margin: '0.1rem 0' }}>
+                <div style={{ fontSize: 'clamp(2rem, 8vw, 2.5rem)', fontWeight: '900', color: '#0F5147', lineHeight: 1.1, margin: '0.1rem 0' }}>
                   {message.data.token_number}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#1E293B', fontWeight: '600' }}>
+                <div style={{ fontSize: '0.85rem', color: '#1E293B', fontWeight: '600', wordBreak: 'break-word' }}>
                   {message.data.doctor_name}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: '#0284C7' }}>
@@ -266,7 +266,7 @@ export default function ReceptionistDashboard() {
                 >
                   <QRCodeSVG
                     value={`${window.location.origin}/queue/${message.data.queue_access_token}`}
-                    size={130}
+                    size={120}
                     level="M"
                     includeMargin={false}
                   />
@@ -279,12 +279,12 @@ export default function ReceptionistDashboard() {
               {/* Action Buttons: Copy Link & Print */}
               {message.data.queue_access_token && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.65rem' }}>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(`${window.location.origin}/queue/${message.data.queue_access_token}`)}
                       className="btn-secondary"
-                      style={{ flex: 1, padding: '0.45rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                      style={{ flex: 1, minHeight: '40px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
                       <CopyIcon size={13} color="currentColor" />
                       <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
@@ -293,7 +293,7 @@ export default function ReceptionistDashboard() {
                       type="button"
                       onClick={() => printTokenSlip(message.data)}
                       className="btn-primary"
-                      style={{ flex: 1, padding: '0.45rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                      style={{ flex: 1, minHeight: '40px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
                       <PrinterIcon size={13} color="#FFFFFF" />
                       <span>Print Pass</span>
@@ -309,8 +309,9 @@ export default function ReceptionistDashboard() {
                       fontSize: '0.75rem',
                       color: '#0D9488',
                       textDecoration: 'underline',
-                      marginTop: '0.2rem',
-                      fontWeight: '500'
+                      marginTop: '0.3rem',
+                      fontWeight: '600',
+                      padding: '0.2rem'
                     }}
                   >
                     Open Live Patient Tracker ↗
@@ -353,8 +354,8 @@ export default function ReceptionistDashboard() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '0.65rem' }}>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.65rem' }}>
+              <div>
                 <label style={labelStyle}>Age</label>
                 <input
                   required
@@ -367,7 +368,7 @@ export default function ReceptionistDashboard() {
                   onChange={e => setFormData({ ...formData, age: e.target.value })}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div>
                 <label style={labelStyle}>Gender</label>
                 <select
                   className="input-control"
@@ -385,6 +386,7 @@ export default function ReceptionistDashboard() {
               <label style={labelStyle}>Contact Phone</label>
               <input
                 required
+                type="tel"
                 className="input-control"
                 placeholder="e.g. 9876543210"
                 value={formData.phone}
@@ -423,7 +425,7 @@ export default function ReceptionistDashboard() {
               type="submit"
               disabled={registerLoading}
               className="btn-primary"
-              style={{ width: '100%', marginTop: '0.4rem', padding: '0.65rem' }}
+              style={{ width: '100%', marginTop: '0.4rem', minHeight: '46px' }}
             >
               {registerLoading ? (
                 <>
@@ -437,12 +439,12 @@ export default function ReceptionistDashboard() {
           </form>
         </div>
 
-        {/* Right Column: Clean Clinical Queue Table */}
+        {/* Right Column: Clean Clinical Queue Display */}
         <div className="card" style={{ padding: '1.35rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
               <h2 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-                Live Outpatient Queue
+                Live Outpatient Queue ({queue.length})
               </h2>
               <p style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
                 Real-time queue sequence and remote digital pass status
@@ -451,95 +453,154 @@ export default function ReceptionistDashboard() {
             <button
               onClick={fetchData}
               className="btn-secondary"
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
+              style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', minHeight: '36px' }}
             >
               ↻ Refresh
             </button>
           </div>
 
-          <div className="table-container">
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Patient Name</th>
-                  <th>Physician</th>
-                  <th>Department</th>
-                  <th>Queue Status</th>
-                  <th>Digital Pass</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {queue.map(q => (
-                  <tr key={q.id}>
-                    {/* Token */}
-                    <td style={{ fontWeight: '700', color: '#0F5147', fontSize: '0.9rem' }}>
-                      {q.token_number}
-                    </td>
-
-                    {/* Patient */}
-                    <td>
-                      <div style={{ fontWeight: '600', color: '#0F172A' }}>{q.patient_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                        {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
-                      </div>
-                    </td>
-
-                    {/* Doctor */}
-                    <td style={{ color: '#1E293B' }}>{q.doctor_name}</td>
-
-                    {/* Department */}
-                    <td style={{ color: '#64748B', fontSize: '0.8rem' }}>{q.department_name}</td>
-
-                    {/* Clinical Status Indicator (No Candy Pills!) */}
-                    <td>
-                      <div className="status-indicator">
-                        <span className={`status-dot ${getStatusDotClass(q.status)}`} />
-                        <span>{formatStatus(q.status)}</span>
-                      </div>
-                    </td>
-
-                    {/* Digital Pass Button (Single line, Sleek) */}
-                    <td>
-                      {q.queue_access_token ? (
-                        <button
-                          onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
-                          className="table-action-btn"
-                        >
-                          <QrCodeIcon size={13} color="#0D9488" />
-                          <span>Queue Pass</span>
-                        </button>
-                      ) : (
-                        <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
-                      )}
-                    </td>
-
-                    {/* Action */}
-                    <td style={{ textAlign: 'right' }}>
-                      {q.status === 'WAITING' ? (
-                        <button
-                          onClick={() => cancelToken(q.id)}
-                          className="table-cancel-btn"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
-                        <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {queue.length === 0 && (
+          {/* Desktop Table View (>= 768px) */}
+          <div className="table-desktop-view">
+            <div className="table-container">
+              <table className="modern-table">
+                <thead>
                   <tr>
-                    <td colSpan="7" style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
-                      No outpatient entries registered in queue today.
-                    </td>
+                    <th>Token</th>
+                    <th>Patient Name</th>
+                    <th>Physician</th>
+                    <th>Department</th>
+                    <th>Queue Status</th>
+                    <th>Digital Pass</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {queue.map(q => (
+                    <tr key={q.id}>
+                      {/* Token */}
+                      <td style={{ fontWeight: '700', color: '#0F5147', fontSize: '0.9rem' }}>
+                        {q.token_number}
+                      </td>
+
+                      {/* Patient */}
+                      <td>
+                        <div style={{ fontWeight: '600', color: '#0F172A' }}>{q.patient_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                          {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
+                        </div>
+                      </td>
+
+                      {/* Doctor */}
+                      <td style={{ color: '#1E293B' }}>{q.doctor_name}</td>
+
+                      {/* Department */}
+                      <td style={{ color: '#64748B', fontSize: '0.8rem' }}>{q.department_name}</td>
+
+                      {/* Clinical Status Indicator */}
+                      <td>
+                        <div className="status-indicator">
+                          <span className={`status-dot ${getStatusDotClass(q.status)}`} />
+                          <span>{formatStatus(q.status)}</span>
+                        </div>
+                      </td>
+
+                      {/* Digital Pass Button */}
+                      <td>
+                        {q.queue_access_token ? (
+                          <button
+                            onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
+                            className="table-action-btn"
+                          >
+                            <QrCodeIcon size={13} color="#0D9488" />
+                            <span>Queue Pass</span>
+                          </button>
+                        ) : (
+                          <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td style={{ textAlign: 'right' }}>
+                        {q.status === 'WAITING' ? (
+                          <button
+                            onClick={() => cancelToken(q.id)}
+                            className="table-cancel-btn"
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {queue.length === 0 && (
+                    <tr>
+                      <td colSpan="7" style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
+                        No outpatient entries registered in queue today.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Mobile Card View (< 768px) */}
+          <div className="cards-mobile-view">
+            {queue.map(q => (
+              <div key={q.id} className="mobile-queue-card">
+                <div className="mobile-queue-card__header">
+                  <span className="mobile-queue-card__token">{q.token_number}</span>
+                  <div className="status-indicator">
+                    <span className={`status-dot ${getStatusDotClass(q.status)}`} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>{formatStatus(q.status)}</span>
+                  </div>
+                </div>
+
+                <div className="mobile-queue-card__body">
+                  <div className="mobile-queue-card__patient">{q.patient_name}</div>
+                  <div className="mobile-queue-card__meta">
+                    <span>{q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#1E293B', marginTop: '0.15rem' }}>
+                    <strong>Doctor:</strong> {q.doctor_name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#0284C7' }}>
+                    <strong>Dept:</strong> {q.department_name}
+                  </div>
+                </div>
+
+                <div className="mobile-queue-card__actions">
+                  {q.queue_access_token && (
+                    <button
+                      onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
+                      className="table-action-btn"
+                      style={{ flex: 1, minHeight: '40px' }}
+                    >
+                      <QrCodeIcon size={14} color="#0D9488" />
+                      <span>Queue Pass</span>
+                    </button>
+                  )}
+                  {q.status === 'WAITING' && (
+                    <button
+                      onClick={() => cancelToken(q.id)}
+                      className="table-cancel-btn"
+                      style={{ flex: q.queue_access_token ? 'none' : 1, minHeight: '40px' }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {queue.length === 0 && (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B' }}>
+                No outpatient entries registered in queue today.
+              </div>
+            )}
+          </div>
+
         </div>
 
       </div>
@@ -559,7 +620,8 @@ export default function ReceptionistDashboard() {
               </div>
               <button
                 onClick={() => setActiveQRModal(null)}
-                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '36px', minHeight: '36px' }}
+                aria-label="Close Modal"
               >
                 <CloseIcon size={16} color="#64748B" />
               </button>

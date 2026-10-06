@@ -45,29 +45,30 @@ export default function Login() {
   };
 
   return (
-    <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1.5rem' }}>
+    <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem', boxSizing: 'border-box' }}>
       <div
         className="card"
         style={{
           maxWidth: '420px',
           width: '100%',
-          padding: '2.25rem 2rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03)'
+          padding: 'clamp(1.25rem, 5vw, 2rem)',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03)',
+          boxSizing: 'border-box'
         }}
       >
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div
             style={{
-              width: '48px',
-              height: '48px',
+              width: '46px',
+              height: '46px',
               borderRadius: '12px',
               background: 'var(--primary-teal, #0D9488)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 1rem',
+              margin: '0 auto 0.75rem',
               boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)'
             }}
           >
@@ -103,7 +104,7 @@ export default function Login() {
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
           <div>
             <label
               style={{
@@ -154,8 +155,8 @@ export default function Login() {
             className="btn-primary"
             style={{
               width: '100%',
-              padding: '0.75rem',
-              marginTop: '0.5rem',
+              minHeight: '46px',
+              marginTop: '0.4rem',
               fontSize: '0.95rem'
             }}
           >
@@ -171,8 +172,8 @@ export default function Login() {
         </form>
 
         {/* Quick Demo Credentials */}
-        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle, #E2E8F0)', paddingTop: '1.25rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary, #64748B)', textAlign: 'center', marginBottom: '0.75rem' }}>
+        <div style={{ marginTop: '1.75rem', borderTop: '1px solid var(--border-subtle, #E2E8F0)', paddingTop: '1.15rem' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary, #64748B)', textAlign: 'center', marginBottom: '0.65rem' }}>
             Quick Demo Logins (Click to Autofill)
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -180,34 +181,34 @@ export default function Login() {
               type="button"
               onClick={() => handleDemoFill('receptionist1@hospital.com', 'recep123')}
               className="btn-secondary"
-              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+              style={{ fontSize: '0.78rem', padding: '0.55rem 0.85rem', minHeight: '44px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.15rem', width: '100%' }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '600' }}>
                 <UserIcon size={14} color="#0D9488" /> Receptionist
               </span>
-              <span style={{ color: 'var(--text-muted)' }}>receptionist1@hospital.com</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>receptionist1@hospital.com</span>
             </button>
             <button
               type="button"
               onClick={() => handleDemoFill('dr.ravi@hospital.com', 'doctor123')}
               className="btn-secondary"
-              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+              style={{ fontSize: '0.78rem', padding: '0.55rem 0.85rem', minHeight: '44px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.15rem', width: '100%' }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '600' }}>
                 <StethoscopeIcon size={14} color="#0D9488" /> Doctor (General Medicine)
               </span>
-              <span style={{ color: 'var(--text-muted)' }}>dr.ravi@hospital.com</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>dr.ravi@hospital.com</span>
             </button>
             <button
               type="button"
               onClick={() => handleDemoFill('admin@hospital.com', 'admin123')}
               className="btn-secondary"
-              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+              style={{ fontSize: '0.78rem', padding: '0.55rem 0.85rem', minHeight: '44px', flexDirection: 'column', alignItems: 'flex-start', gap: '0.15rem', width: '100%' }}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '600' }}>
                 <ShieldCheckIcon size={14} color="#0D9488" /> Administrator
               </span>
-              <span style={{ color: 'var(--text-muted)' }}>admin@hospital.com</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>admin@hospital.com</span>
             </button>
           </div>
         </div>

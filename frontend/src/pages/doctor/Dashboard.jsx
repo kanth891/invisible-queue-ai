@@ -59,13 +59,13 @@ export default function DoctorDashboard() {
   const completedPatients = queue.filter(q => ['COMPLETED', 'NO_SHOW', 'CANCELLED'].includes(q.status));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.75rem' }}>
+    <div className="doctor-layout">
       
       {/* ── Main Area: Active Consultation & Waiting Queue ── */}
       <div>
         <div style={{ marginBottom: '1.25rem' }}>
           <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
-            Welcome, Dr. {user.name}
+            Welcome, {user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`}
           </h1>
           <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
             {user.doctorInfo?.department_name || 'Consultation Room'} • Live Patient Queue
@@ -76,13 +76,13 @@ export default function DoctorDashboard() {
         <div
           className="card"
           style={{
-            padding: '1.75rem',
-            marginBottom: '1.75rem',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
             background: currentPatient ? '#F0FDFA' : '#FFFFFF',
             borderColor: currentPatient ? '#99F6E4' : '#E2E8F0'
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: currentPatient ? '#0F766E' : '#64748B' }}>
               Current Consultation
             </span>
@@ -104,12 +104,12 @@ export default function DoctorDashboard() {
           </div>
           
           {currentPatient ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
-              <div>
-                <div style={{ fontSize: '3.25rem', fontWeight: '900', color: '#0F766E', lineHeight: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
+              <div style={{ minWidth: '180px' }}>
+                <div style={{ fontSize: 'clamp(2.4rem, 10vw, 3.25rem)', fontWeight: '900', color: '#0F766E', lineHeight: 1 }}>
                   {currentPatient.token_number}
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1E293B', marginTop: '0.4rem' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1E293B', marginTop: '0.4rem', wordBreak: 'break-word' }}>
                   {currentPatient.patient_name}
                 </div>
                 <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
@@ -117,14 +117,14 @@ export default function DoctorDashboard() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: '220px' }}>
+              {/* Action Buttons: Stacked and Touch-Friendly */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', maxWidth: '280px', flexShrink: 0 }}>
                 {currentPatient.status === 'CALLED' && (
                   <button
                     onClick={() => handleAction(currentPatient.id, 'start')}
                     disabled={actionLoading}
                     className="btn-primary"
-                    style={{ padding: '0.75rem', fontSize: '0.9rem' }}
+                    style={{ width: '100%', minHeight: '48px', fontSize: '0.92rem' }}
                   >
                     Start Consultation
                   </button>
@@ -139,14 +139,16 @@ export default function DoctorDashboard() {
                       color: '#FFFFFF',
                       border: '1px solid #10B981',
                       padding: '0.75rem',
+                      minHeight: '48px',
                       borderRadius: '8px',
                       fontWeight: '600',
                       cursor: 'pointer',
-                      fontSize: '0.9rem',
+                      fontSize: '0.92rem',
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '0.4rem'
+                      gap: '0.4rem',
+                      width: '100%'
                     }}
                   >
                     <CheckCircleIcon size={16} color="#FFFFFF" />
@@ -158,7 +160,7 @@ export default function DoctorDashboard() {
                   onClick={() => handleAction(currentPatient.id, 'noShow')}
                   disabled={actionLoading}
                   className="btn-secondary"
-                  style={{ padding: '0.65rem', fontSize: '0.85rem' }}
+                  style={{ width: '100%', minHeight: '44px', fontSize: '0.85rem' }}
                 >
                   Mark as No-Show
                 </button>
@@ -184,6 +186,9 @@ export default function DoctorDashboard() {
                 style={{
                   padding: '0.75rem 1.75rem',
                   fontSize: '0.95rem',
+                  minHeight: '48px',
+                  width: '100%',
+                  maxWidth: '340px',
                   opacity: waitingPatients.length > 0 ? 1 : 0.5
                 }}
               >
@@ -195,7 +200,7 @@ export default function DoctorDashboard() {
 
         {/* Waiting Queue List */}
         <div className="card" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
               Waiting Queue ({waitingPatients.length})
             </h2>
@@ -204,58 +209,97 @@ export default function DoctorDashboard() {
             </span>
           </div>
 
-          <div className="table-container">
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Patient Details</th>
-                  <th>Status</th>
-                  <th>Estimated Wait</th>
-                </tr>
-              </thead>
-              <tbody>
-                {waitingPatients.map(q => (
-                  <tr key={q.id}>
-                    <td style={{ fontWeight: '800', color: '#0F766E' }}>{q.token_number}</td>
-                    <td>
-                      <div style={{ fontWeight: '600', color: '#1E293B' }}>{q.patient_name}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{q.patient_age} yrs • {q.patient_gender}</div>
-                    </td>
-                    <td>
-                      <div className="status-indicator">
-                        <span className="status-dot status-dot--waiting" />
-                        <span>Waiting</span>
-                      </div>
-                    </td>
-                    <td style={{ color: '#0F766E', fontSize: '0.82rem', fontWeight: '600' }}>
+          {/* Desktop Table View (>= 768px) */}
+          <div className="table-desktop-view">
+            <div className="table-container">
+              <table className="modern-table">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Patient Details</th>
+                    <th>Status</th>
+                    <th>Estimated Wait</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {waitingPatients.map(q => (
+                    <tr key={q.id}>
+                      <td style={{ fontWeight: '800', color: '#0F766E' }}>{q.token_number}</td>
+                      <td>
+                        <div style={{ fontWeight: '600', color: '#1E293B' }}>{q.patient_name}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{q.patient_age} yrs • {q.patient_gender}</div>
+                      </td>
+                      <td>
+                        <div className="status-indicator">
+                          <span className="status-dot status-dot--waiting" />
+                          <span>Waiting</span>
+                        </div>
+                      </td>
+                      <td style={{ color: '#0F766E', fontSize: '0.82rem', fontWeight: '600' }}>
+                        {q.predicted_wait_minutes !== undefined
+                          ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                  {waitingPatients.length === 0 && (
+                    <tr>
+                      <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>
+                        No patients currently waiting in this room.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View (< 768px) */}
+          <div className="cards-mobile-view">
+            {waitingPatients.map(q => (
+              <div key={q.id} className="mobile-queue-card">
+                <div className="mobile-queue-card__header">
+                  <span className="mobile-queue-card__token">{q.token_number}</span>
+                  <div className="status-indicator">
+                    <span className="status-dot status-dot--waiting" />
+                    <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>Waiting</span>
+                  </div>
+                </div>
+
+                <div className="mobile-queue-card__body">
+                  <div className="mobile-queue-card__patient">{q.patient_name}</div>
+                  <div className="mobile-queue-card__meta">
+                    <span>{q.patient_age} yrs • {q.patient_gender}</span>
+                  </div>
+                  <div style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#0F766E', fontWeight: '600' }}>
+                    <span>Estimated Wait:</span>
+                    <span>
                       {q.predicted_wait_minutes !== undefined
                         ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
                         : '—'}
-                    </td>
-                  </tr>
-                ))}
-                {waitingPatients.length === 0 && (
-                  <tr>
-                    <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>
-                      No patients currently waiting in this room.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {waitingPatients.length === 0 && (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B' }}>
+                No patients currently waiting in this room.
+              </div>
+            )}
           </div>
+
         </div>
       </div>
 
-      {/* ── Sidebar: Today's Overview Metrics ── */}
+      {/* ── Sidebar: Room Overview Metrics ── */}
       <div>
         <div className="card" style={{ padding: '1.25rem' }}>
           <h2 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0F172A', marginBottom: '1rem' }}>
             Room Overview
           </h2>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
             <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
               <span className="clinical-stat-card__label">Waiting in Queue</span>
               <span className="clinical-stat-card__value" style={{ color: '#D97706' }}>
@@ -264,14 +308,14 @@ export default function DoctorDashboard() {
             </div>
 
             <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
-              <span className="clinical-stat-card__label">Completed Consultations</span>
+              <span className="clinical-stat-card__label">Completed</span>
               <span className="clinical-stat-card__value" style={{ color: '#10B981' }}>
                 {completedPatients.filter(p => p.status === 'COMPLETED').length}
               </span>
             </div>
 
             <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
-              <span className="clinical-stat-card__label">No-Shows / Cancelled</span>
+              <span className="clinical-stat-card__label">No-Shows</span>
               <span className="clinical-stat-card__value" style={{ color: '#64748B' }}>
                 {completedPatients.filter(p => p.status !== 'COMPLETED').length}
               </span>

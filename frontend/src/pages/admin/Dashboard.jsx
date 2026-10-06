@@ -47,7 +47,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
             Hospital Administration
@@ -60,14 +60,26 @@ export default function AdminDashboard() {
         <button
           onClick={fetchData}
           className="btn-secondary"
-          style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}
+          style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', minHeight: '38px' }}
         >
           ↻ Refresh Data
         </button>
       </div>
       
-      {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.75rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem', overflowX: 'auto' }}>
+      {/* Navigation Tabs (Smooth touch scrolling on mobile) */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '0.5rem',
+          marginBottom: '1.75rem',
+          borderBottom: '1px solid #E2E8F0',
+          paddingBottom: '0.75rem',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }}
+      >
         <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
             <BarChartIcon size={14} color="currentColor" />
@@ -103,7 +115,7 @@ export default function AdminDashboard() {
       {/* ── Tab 1: Overview ── */}
       {activeTab === 'overview' && stats && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
               Hospital Queue Metrics (Today)
             </h2>
@@ -126,7 +138,7 @@ export default function AdminDashboard() {
             </span>
           </div>
 
-          <div className="status-grid" style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             <StatCard label="Total Registered Patients" value={stats.total_patients} color="#1E293B" />
             <StatCard label="Active Virtual Queues" value={stats.active_virtual_queues ?? 0} color="#0D9488" />
             <StatCard label="Patients Waiting" value={stats.waiting} color="#F59E0B" />
@@ -312,7 +324,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Runtime Production Performance Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1.75rem' }}>
             <StatCard
               label="Total Predictions"
               value={predictionMetrics?.liveDatabaseStats?.totalPredictions ?? '0'}
@@ -336,7 +348,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Section: Benchmark Comparison Table */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '1.75rem' }}>
             
             {/* Model Comparison Table */}
             <div className="card" style={{ padding: '1.25rem' }}>
@@ -541,12 +553,16 @@ function Tab({ active, onClick, children }) {
         background: active ? '#F0FDFA' : '#FFFFFF',
         color: active ? '#0F766E' : '#64748B',
         border: `1px solid ${active ? '#99F6E4' : '#E2E8F0'}`,
-        padding: '0.45rem 0.9rem',
+        padding: '0.5rem 0.95rem',
+        minHeight: '40px',
+        flexShrink: 0,
+        whiteSpace: 'nowrap',
         borderRadius: '6px',
         cursor: 'pointer',
         fontWeight: active ? '600' : '500',
         fontSize: '0.82rem',
-        transition: 'all 0.15s ease'
+        transition: 'all 0.15s ease',
+        touchAction: 'manipulation'
       }}
     >
       {children}
@@ -556,11 +572,11 @@ function Tab({ active, onClick, children }) {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="card" style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-      <div style={{ fontSize: '0.78rem', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+    <div className="card" style={{ padding: '1.15rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: 0 }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em', lineHeight: 1.25 }}>
         {label}
       </div>
-      <div style={{ fontSize: '2rem', fontWeight: '800', color, lineHeight: 1.15 }}>
+      <div style={{ fontSize: 'clamp(1.5rem, 5vw, 1.9rem)', fontWeight: '800', color, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </div>
     </div>
