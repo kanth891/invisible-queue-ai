@@ -228,8 +228,10 @@ export default function DoctorDashboard() {
                         <span>Waiting</span>
                       </div>
                     </td>
-                    <td style={{ color: '#64748B', fontSize: '0.82rem' }}>
-                      Prediction (Phase 3)
+                    <td style={{ color: '#0F766E', fontSize: '0.82rem', fontWeight: '600' }}>
+                      {q.predicted_wait_minutes !== undefined
+                        ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
+                        : '—'}
                     </td>
                   </tr>
                 ))}

@@ -74,6 +74,25 @@ export async function autoMigrate() {
       UPDATE queue_entries 
       SET queue_access_token = md5(random()::text || clock_timestamp()::text || id::text) 
       WHERE queue_access_token IS NULL;
+
+      -- Phase 3 AI Waiting-Time Predictions Logging Table
+      CREATE TABLE IF NOT EXISTS predictions (
+        id                      SERIAL PRIMARY KEY,
+        queue_entry_id          INTEGER NOT NULL REFERENCES queue_entries(id) ON DELETE CASCADE,
+        token_number            VARCHAR(20) NOT NULL,
+        patients_ahead          INTEGER NOT NULL,
+        predicted_wait_minutes  NUMERIC(5, 1) NOT NULL,
+        lower_bound_minutes     INTEGER NOT NULL,
+        upper_bound_minutes     INTEGER NOT NULL,
+        model_version           VARCHAR(50) NOT NULL,
+        features_json           JSONB,
+        actual_wait_minutes     NUMERIC(5, 1),
+        prediction_error        NUMERIC(5, 1),
+        is_fallback             BOOLEAN DEFAULT FALSE,
+        created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_predictions_queue_entry ON predictions(queue_entry_id);
+      CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON predictions(created_at);
     `);
 
     // Check if seed users exist

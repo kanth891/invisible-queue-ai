@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { queueAPI } from '../../services/api';
-import { MedicalCrossIcon, SearchIcon, StethoscopeIcon, CheckCircleIcon, ClockIcon } from '../../components/Icons';
+import { MedicalCrossIcon, SearchIcon, StethoscopeIcon, CheckCircleIcon, ClockIcon, PulseIcon } from '../../components/Icons';
 
 const DEFAULT_POLL_INTERVAL_MS = 6000;
 
@@ -365,24 +365,88 @@ export default function PatientQueue() {
           </div>
         )}
 
-        {/* Estimated Wait Time Box */}
-        <div
-          style={{
-            background: '#FFFFFF',
-            border: '1px dashed #CBD5E1',
-            borderRadius: '8px',
-            padding: '0.65rem 0.85rem',
-            marginBottom: '1.15rem',
-            textAlign: 'center'
-          }}
-        >
-          <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontWeight: '600' }}>
-            Estimated Wait Time
+        {/* Estimated Wait Time Box (Phase 3 Intelligent Prediction) */}
+        {data.status === 'WAITING' && (
+          <div
+            style={{
+              background: '#F0FDFA',
+              border: '1px solid #99F6E4',
+              borderRadius: '8px',
+              padding: '0.9rem 1rem',
+              marginBottom: '1.15rem',
+              textAlign: 'center'
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.70rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: '#0F766E',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <PulseIcon size={13} color="#0D9488" />
+              <span>Estimated Wait Time</span>
+            </div>
+
+            {refreshing && !data.prediction ? (
+              <div style={{ fontSize: '0.85rem', color: '#64748B', margin: '0.45rem 0', fontWeight: '500' }}>
+                Calculating estimated wait...
+              </div>
+            ) : data.patientsAhead === 0 ? (
+              <div style={{ margin: '0.35rem 0' }}>
+                <div style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F5147', lineHeight: 1.1 }}>
+                  ~2 min
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#0D9488', fontWeight: '600', marginTop: '0.15rem' }}>
+                  You are next in line — please be prepared
+                </div>
+              </div>
+            ) : data.prediction && data.prediction.lower_bound_minutes ? (
+              <div style={{ margin: '0.35rem 0' }}>
+                <div
+                  style={{
+                    fontSize: '1.85rem',
+                    fontWeight: '900',
+                    color: '#0F5147',
+                    lineHeight: 1.1,
+                    fontVariantNumeric: 'tabular-nums'
+                  }}
+                >
+                  {data.prediction.lower_bound_minutes}–{data.prediction.upper_bound_minutes} min
+                </div>
+                <div style={{ fontSize: '0.76rem', color: '#0F766E', marginTop: '0.2rem', fontWeight: '500' }}>
+                  {data.prediction.message || 'Estimated wait based on current queue'}
+                </div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.3rem',
+                    marginTop: '0.35rem',
+                    fontSize: '0.68rem',
+                    color: '#64748B',
+                    background: '#FFFFFF',
+                    padding: '0.2rem 0.55rem',
+                    borderRadius: '4px',
+                    border: '1px solid #CCFBF1'
+                  }}
+                >
+                  <span>Model: {data.prediction.is_fallback ? 'Historical Baseline' : 'AI Gradient Boosting'}</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.4rem 0' }}>
+                Estimated wait unavailable — We're still learning from queue data.
+              </div>
+            )}
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#334155', marginTop: '0.15rem', fontWeight: '500' }}>
-            AI predictive waiting time releasing soon in Phase 3
-          </div>
-        </div>
+        )}
 
         {/* Sync Footer */}
         <div

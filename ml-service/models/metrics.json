@@ -1,0 +1,83 @@
+{
+  "model_version": "v1.0-gradient-boosting",
+  "best_model_name": "Gradient Boosting Regressor",
+  "trained_at": "2026-10-06T19:43:48.991661+00:00",
+  "dataset": {
+    "total_records": 5000,
+    "train_records": 3500,
+    "val_records": 750,
+    "test_records": 750,
+    "dataset_type": "SYNTHETIC_DEVELOPMENT",
+    "notes": "Chronological train/val/test split (70%/15%/15%) to prevent temporal data leakage."
+  },
+  "evaluation_summary": [
+    {
+      "model_name": "Baseline (Doctor/Dept Median)",
+      "test_mae": 8.89,
+      "test_rmse": 12.77,
+      "test_r2": 0.915,
+      "val_mae": 8.66,
+      "val_rmse": 12.14,
+      "val_r2": 0.9177
+    },
+    {
+      "model_name": "Linear Regression (Ridge)",
+      "test_mae": 9.89,
+      "test_rmse": 12.76,
+      "test_r2": 0.9151,
+      "val_mae": 10.37,
+      "val_rmse": 13.45,
+      "val_r2": 0.8989
+    },
+    {
+      "model_name": "Random Forest Regressor",
+      "test_mae": 8.46,
+      "test_rmse": 10.95,
+      "test_r2": 0.9375,
+      "val_mae": 8.31,
+      "val_rmse": 11.02,
+      "val_r2": 0.9322
+    },
+    {
+      "model_name": "Gradient Boosting Regressor",
+      "test_mae": 7.92,
+      "test_rmse": 10.2,
+      "test_r2": 0.9458,
+      "val_mae": 7.85,
+      "val_rmse": 10.32,
+      "val_r2": 0.9405
+    }
+  ],
+  "selected_model_metrics": {
+    "test_mae": 7.92,
+    "test_rmse": 10.2,
+    "test_r2": 0.9458,
+    "residual_q10_offset": -11.34,
+    "residual_q90_offset": 14.8,
+    "confidence_coverage": "80% empirical prediction interval"
+  },
+  "feature_importances": {
+    "token_position": 0.5354,
+    "patients_ahead": 0.2595,
+    "doctor_avg_duration": 0.1846,
+    "doctor_id": 0.0111,
+    "queue_length": 0.0028,
+    "department_id": 0.0026,
+    "completed_today": 0.0022,
+    "hour_of_day": 0.0008,
+    "day_of_week": 0.0008,
+    "is_peak_hour": 0.0001
+  },
+  "features_used": [
+    "patients_ahead",
+    "queue_length",
+    "token_position",
+    "hour_of_day",
+    "day_of_week",
+    "is_peak_hour",
+    "department_id",
+    "doctor_id",
+    "doctor_avg_duration",
+    "completed_today"
+  ]
+}

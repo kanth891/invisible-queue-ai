@@ -23,6 +23,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5000
+      - ML_SERVICE_URL=http://ml-service:8000
+    depends_on:
+      ml-service:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
@@ -30,6 +34,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+
+  # ── ML Prediction Service (FastAPI + Python) ──────
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: iq-ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
   # ── Frontend ─────────────────────────────────────
   frontend:
@@ -45,3 +67,4 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+
