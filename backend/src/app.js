@@ -15,6 +15,7 @@ import doctorRoutes from './routes/doctors.js';
 import patientRoutes from './routes/patients.js';
 import queueRoutes, { getPatientQueueAccess } from './routes/queue.js';
 import userRoutes from './routes/users.js';
+import { autoMigrate } from './db/autoMigrate.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -62,27 +63,11 @@ app.use('/api/users', authenticate, userRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-async function initPhase2Schema() {
-  try {
-    await pool.query(`
-      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_token VARCHAR(64) UNIQUE;
-      ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_created_at TIMESTAMPTZ DEFAULT NOW();
-      CREATE INDEX IF NOT EXISTS idx_queue_entries_access_token ON queue_entries(queue_access_token);
-      UPDATE queue_entries 
-      SET queue_access_token = md5(random()::text || clock_timestamp()::text || id::text) 
-      WHERE queue_access_token IS NULL;
-    `);
-    console.log('✅ Phase 2 Virtual Queue schema verified & updated');
-  } catch (err) {
-    console.error('⚠️  Schema initialization note:', err.message);
-  }
-}
-
 app.listen(PORT, async () => {
   console.log(`🚀 Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT}`);
   if (process.env.DATABASE_URL) {
     const ok = await testConnection();
-    if (ok) await initPhase2Schema();
+    if (ok) await autoMigrate();
   } else {
     console.warn('⚠️  DATABASE_URL not set');
   }
