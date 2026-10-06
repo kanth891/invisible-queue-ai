@@ -334,28 +334,29 @@ export default function DoctorDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {waitingPatients.map(q => (
-                    <tr key={q.id}>
-                      <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{q.token_number}</td>
-                      <td>
-                        <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{q.patient_age} yrs • {q.patient_gender}</div>
-                      </td>
-                      <td>
-                        <div className="status-indicator">
-                          <span className="status-dot status-dot--waiting" />
-                          <span style={{ fontWeight: '600', color: '#B45309' }}>Waiting</span>
-                        </div>
-                      </td>
-                      <td style={{ color: '#059669', fontSize: '0.82rem', fontWeight: '700' }}>
-                        {q.predicted_wait_minutes !== undefined
-                          ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
-                          : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                  {waitingPatients.length === 0 && (
-                    <tr>
+                  {waitingPatients.length > 0 ? (
+                    waitingPatients.map((q) => (
+                      <tr key={`doc-wait-${q.id}`}>
+                        <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{q.token_number}</td>
+                        <td>
+                          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{q.patient_age} yrs • {q.patient_gender}</div>
+                        </td>
+                        <td>
+                          <div className="status-indicator">
+                            <span className="status-dot status-dot--waiting" />
+                            <span style={{ fontWeight: '600', color: '#B45309' }}>Waiting</span>
+                          </div>
+                        </td>
+                        <td style={{ color: '#059669', fontSize: '0.82rem', fontWeight: '700' }}>
+                          {q.predicted_wait_minutes !== undefined
+                            ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
+                            : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key="doc-empty-queue">
                       <td colSpan="4" style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                         No patients currently waiting in this room.
                       </td>

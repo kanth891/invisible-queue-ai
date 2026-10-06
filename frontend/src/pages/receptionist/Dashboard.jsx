@@ -556,67 +556,68 @@ export default function ReceptionistDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {queue.map(q => (
-                    <tr key={q.id}>
-                      {/* Token */}
-                      <td style={{ fontWeight: '800', color: '#2563EB', fontSize: '0.92rem', fontFamily: "'Outfit', sans-serif" }}>
-                        {q.token_number}
-                      </td>
+                  {queue.length > 0 ? (
+                    queue.map((q) => (
+                      <tr key={`recep-queue-${q.id}`}>
+                        {/* Token */}
+                        <td style={{ fontWeight: '800', color: '#2563EB', fontSize: '0.92rem', fontFamily: "'Outfit', sans-serif" }}>
+                          {q.token_number}
+                        </td>
 
-                      {/* Patient */}
-                      <td>
-                        <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
-                        </div>
-                      </td>
+                        {/* Patient */}
+                        <td>
+                          <div style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{q.patient_name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
+                          </div>
+                        </td>
 
-                      {/* Doctor */}
-                      <td style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{q.doctor_name}</td>
+                        {/* Doctor */}
+                        <td style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{q.doctor_name}</td>
 
-                      {/* Department */}
-                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{q.department_name}</td>
+                        {/* Department */}
+                        <td style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{q.department_name}</td>
 
-                      {/* Clinical Status Indicator */}
-                      <td>
-                        <div className="status-indicator">
-                          <span className={`status-dot ${getStatusDotClass(q.status)}`} />
-                          <span>{formatStatus(q.status)}</span>
-                        </div>
-                      </td>
+                        {/* Clinical Status Indicator */}
+                        <td>
+                          <div className="status-indicator">
+                            <span className={`status-dot ${getStatusDotClass(q.status)}`} />
+                            <span>{formatStatus(q.status)}</span>
+                          </div>
+                        </td>
 
-                      {/* Digital Pass Button */}
-                      <td>
-                        {q.queue_access_token ? (
-                          <button
-                            onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
-                            className="table-action-btn"
-                          >
-                            <QrCodeIcon size={13} color="#2563EB" />
-                            <span>Queue Pass</span>
-                          </button>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
-                        )}
-                      </td>
+                        {/* Digital Pass Button */}
+                        <td>
+                          {q.queue_access_token ? (
+                            <button
+                              onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
+                              className="table-action-btn"
+                            >
+                              <QrCodeIcon size={13} color="#2563EB" />
+                              <span>Queue Pass</span>
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                          )}
+                        </td>
 
-                      {/* Action */}
-                      <td style={{ textAlign: 'right' }}>
-                        {q.status === 'WAITING' ? (
-                          <button
-                            onClick={() => cancelToken(q.id)}
-                            className="table-cancel-btn"
-                          >
-                            Cancel
-                          </button>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {queue.length === 0 && (
-                    <tr>
+                        {/* Action */}
+                        <td style={{ textAlign: 'right' }}>
+                          {q.status === 'WAITING' ? (
+                            <button
+                              onClick={() => cancelToken(q.id)}
+                              className="table-cancel-btn"
+                            >
+                              Cancel
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key="recep-empty-queue">
                       <td colSpan="7" style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                         No outpatient entries registered in queue today.
                       </td>

@@ -383,17 +383,18 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(analyticsData?.departmentPerformance || []).map((dp) => (
-                    <tr key={dp.departmentId}>
-                      <td style={{ fontWeight: '700', color: '#2563EB' }}>{dp.name} ({dp.code})</td>
-                      <td>{dp.totalRegistered}</td>
-                      <td style={{ color: '#059669', fontWeight: '700' }}>{dp.served}</td>
-                      <td style={{ color: dp.waiting > 0 ? '#D97706' : 'var(--text-secondary)', fontWeight: '700' }}>{dp.waiting}</td>
-                      <td style={{ fontWeight: '600' }}>{dp.avgWaitMinutes ? `${dp.avgWaitMinutes} min` : '—'}</td>
-                    </tr>
-                  ))}
-                  {(!analyticsData?.departmentPerformance || analyticsData.departmentPerformance.length === 0) && (
-                    <tr>
+                  {(analyticsData?.departmentPerformance && analyticsData.departmentPerformance.length > 0) ? (
+                    analyticsData.departmentPerformance.map((dp, idx) => (
+                      <tr key={`dp-${dp.departmentId || idx}`}>
+                        <td style={{ fontWeight: '700', color: '#2563EB' }}>{dp.name} ({dp.code})</td>
+                        <td>{dp.totalRegistered}</td>
+                        <td style={{ color: '#059669', fontWeight: '700' }}>{dp.served}</td>
+                        <td style={{ color: dp.waiting > 0 ? '#D97706' : 'var(--text-secondary)', fontWeight: '700' }}>{dp.waiting}</td>
+                        <td style={{ fontWeight: '600' }}>{dp.avgWaitMinutes ? `${dp.avgWaitMinutes} min` : '—'}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key="empty-dept-perf">
                       <td colSpan="5" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)' }}>
                         No department telemetry registered today.
                       </td>
@@ -420,18 +421,19 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(analyticsData?.doctorPerformance || []).map((doc) => (
-                    <tr key={doc.doctorId}>
-                      <td style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{doc.doctorName}</td>
-                      <td style={{ color: '#2563EB', fontWeight: '600' }}>{doc.departmentName}</td>
-                      <td style={{ fontWeight: '600' }}>{doc.completedCount}</td>
-                      <td style={{ fontWeight: '700', color: '#059669' }}>
-                        {doc.avgDurationMinutes ? `${doc.avgDurationMinutes} min` : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!analyticsData?.doctorPerformance || analyticsData.doctorPerformance.length === 0) && (
-                    <tr>
+                  {(analyticsData?.doctorPerformance && analyticsData.doctorPerformance.length > 0) ? (
+                    analyticsData.doctorPerformance.map((doc, idx) => (
+                      <tr key={`doc-${doc.doctorId || idx}`}>
+                        <td style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{doc.doctorName}</td>
+                        <td style={{ color: '#2563EB', fontWeight: '600' }}>{doc.departmentName}</td>
+                        <td style={{ fontWeight: '600' }}>{doc.completedCount}</td>
+                        <td style={{ fontWeight: '700', color: '#059669' }}>
+                          {doc.avgDurationMinutes ? `${doc.avgDurationMinutes} min` : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key="empty-doc-perf">
                       <td colSpan="4" style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-secondary)' }}>
                         No doctor consultation duration records yet.
                       </td>
@@ -475,8 +477,8 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {analyticsData.predictedVsActual.map((item) => (
-                      <tr key={item.id}>
+                    {analyticsData.predictedVsActual.map((item, idx) => (
+                      <tr key={`pva-${item.id || idx}`}>
                         <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{item.token_number}</td>
                         <td>{item.patients_ahead}</td>
                         <td style={{ fontWeight: '600' }}>~{item.predicted_wait_minutes} min</td>
@@ -672,45 +674,46 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(predictionMetrics?.recentPredictions || []).map(p => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{p.token_number}</td>
-                      <td>{p.patients_ahead}</td>
-                      <td style={{ fontWeight: '600' }}>~{p.predicted_wait_minutes}m</td>
-                      <td style={{ color: 'var(--text-secondary)' }}>{p.lower_bound_minutes}–{p.upper_bound_minutes} min</td>
-                      <td>
-                        {p.actual_wait_minutes !== null ? (
-                          <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{p.actual_wait_minutes}m</span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Waiting...</span>
-                        )}
-                      </td>
-                      <td>
-                        {p.prediction_error !== null ? (
-                          <span style={{ fontWeight: '700', color: Math.abs(p.prediction_error) <= 5 ? '#059669' : '#D97706' }}>
-                            {p.prediction_error > 0 ? `+${p.prediction_error}` : p.prediction_error}m
+                  {(predictionMetrics?.recentPredictions && predictionMetrics.recentPredictions.length > 0) ? (
+                    predictionMetrics.recentPredictions.map((p, idx) => (
+                      <tr key={`rp-${p.id || idx}`}>
+                        <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{p.token_number}</td>
+                        <td>{p.patients_ahead}</td>
+                        <td style={{ fontWeight: '600' }}>~{p.predicted_wait_minutes}m</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{p.lower_bound_minutes}–{p.upper_bound_minutes} min</td>
+                        <td>
+                          {p.actual_wait_minutes !== null ? (
+                            <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{p.actual_wait_minutes}m</span>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Waiting...</span>
+                          )}
+                        </td>
+                        <td>
+                          {p.prediction_error !== null ? (
+                            <span style={{ fontWeight: '700', color: Math.abs(p.prediction_error) <= 5 ? '#059669' : '#D97706' }}>
+                              {p.prediction_error > 0 ? `+${p.prediction_error}` : p.prediction_error}m
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)' }}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            background: p.is_fallback ? '#FEF3C7' : '#EFF6FF',
+                            color: p.is_fallback ? '#B45309' : '#1D4ED8',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '6px',
+                            border: `1px solid ${p.is_fallback ? '#FDE68A' : '#BFDBFE'}`,
+                            fontWeight: '700'
+                          }}>
+                            {p.is_fallback ? 'Fallback' : 'GBR v1.0'}
                           </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        )}
-                      </td>
-                      <td>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          background: p.is_fallback ? '#FEF3C7' : '#EFF6FF',
-                          color: p.is_fallback ? '#B45309' : '#1D4ED8',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '6px',
-                          border: `1px solid ${p.is_fallback ? '#FDE68A' : '#BFDBFE'}`,
-                          fontWeight: '700'
-                        }}>
-                          {p.is_fallback ? 'Fallback' : 'GBR v1.0'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {(!predictionMetrics?.recentPredictions || predictionMetrics.recentPredictions.length === 0) && (
-                    <tr>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr key="empty-recent-pred">
                       <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                         No prediction audit records logged today yet. As patients enter the virtual queue, predictions will appear here in real time.
                       </td>
