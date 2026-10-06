@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import './App.css';
 
 // Pages
@@ -56,9 +57,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
