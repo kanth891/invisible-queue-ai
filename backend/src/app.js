@@ -13,7 +13,7 @@ import authRoutes from './routes/auth.js';
 import departmentRoutes from './routes/departments.js';
 import doctorRoutes from './routes/doctors.js';
 import patientRoutes from './routes/patients.js';
-import queueRoutes, { getPatientQueueAccess } from './routes/queue.js';
+import queueRoutes, { getPatientQueueAccess, getPatientPrediction } from './routes/queue.js';
 import userRoutes from './routes/users.js';
 import { autoMigrate } from './db/autoMigrate.js';
 
@@ -23,8 +23,22 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 app.use(helmet());
+const allowedOrigins = CORS_ORIGIN.split(',').map(o => o.trim());
 app.use(cors({
-  origin: CORS_ORIGIN.split(',').map(o => o.trim()),
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes('*') ||
+      origin.endsWith('.onrender.com') ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -50,8 +64,9 @@ app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', versio
 // ── Public routes ─────────────────────────────────
 app.use('/api/auth', authRoutes);
 
-// Phase 2: Virtual Queue Patient Access (Public tracking by secure random token)
+// Phase 2 & 3: Virtual Queue Patient Access (Public tracking & AI prediction by secure random token)
 app.get('/api/queue/access/:accessToken', getPatientQueueAccess);
+app.get('/api/queue/access/:accessToken/prediction', getPatientPrediction);
 
 // ── Protected routes ──────────────────────────────
 app.use('/api/departments', authenticate, departmentRoutes);

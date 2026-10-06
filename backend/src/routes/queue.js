@@ -543,11 +543,7 @@ router.get('/department/:departmentId', async (req, res) => {
 // Public route for patient virtual queue access
 router.get('/access/:accessToken', getPatientQueueAccess);
 
-/**
- * GET /api/queue/access/:accessToken/prediction
- * Public endpoint: Returns dedicated ML prediction for a patient token.
- */
-router.get('/access/:accessToken/prediction', async (req, res) => {
+export async function getPatientPrediction(req, res) {
   try {
     const { accessToken } = req.params;
     if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
@@ -574,7 +570,9 @@ router.get('/access/:accessToken/prediction', async (req, res) => {
     console.error('Patient prediction error:', err);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
-});
+}
+
+router.get('/access/:accessToken/prediction', getPatientPrediction);
 
 /**
  * GET /api/queue/admin/prediction-metrics
