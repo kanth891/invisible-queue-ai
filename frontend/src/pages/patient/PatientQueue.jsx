@@ -259,16 +259,16 @@ export default function PatientQueue() {
         
         {/* Pass Header & Token Section */}
         <div className="patient-token-header">
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748B', fontWeight: '600' }}>
+          <div style={{ fontSize: '0.74rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '700' }}>
             Outpatient Token
           </div>
           <div className="patient-token-number">
             {data.token}
           </div>
-          <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0F172A', marginTop: '0.25rem', wordBreak: 'break-word' }}>
+          <div style={{ fontSize: '1.05rem', fontWeight: '800', fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', marginTop: '0.25rem', wordBreak: 'break-word' }}>
             {data.doctor}
           </div>
-          <div style={{ fontSize: '0.82rem', color: '#0284C7', fontWeight: '500', marginTop: '0.15rem' }}>
+          <div style={{ fontSize: '0.84rem', color: 'var(--primary-cyan)', fontWeight: '600', marginTop: '0.15rem' }}>
             {data.department}
           </div>
         </div>
@@ -279,21 +279,21 @@ export default function PatientQueue() {
         {isCalled && (
           <div
             style={{
-              background: '#F0FDFA',
-              border: '2px solid #0D9488',
-              borderRadius: '10px',
-              padding: '1.1rem 1rem',
-              marginBottom: '1.25rem',
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.22) 0%, rgba(16, 185, 129, 0.18) 100%)',
+              border: '2px solid var(--primary-cyan)',
+              borderRadius: '12px',
+              padding: '1.2rem 1rem',
+              marginBottom: '1.35rem',
               textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.12)',
+              boxShadow: '0 0 30px rgba(6, 182, 212, 0.35)',
               animation: 'pulseGlow 2s infinite ease-in-out',
             }}
           >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.15rem', fontWeight: '800', color: '#0F5147', marginBottom: '0.3rem', letterSpacing: '0.02em' }}>
-              <PulseIcon size={18} color="#0D9488" />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '1.2rem', fontWeight: '900', fontFamily: 'var(--font-heading)', color: '#FFFFFF', marginBottom: '0.35rem', letterSpacing: '0.02em' }}>
+              <PulseIcon size={20} color="var(--primary-cyan)" />
               <span>IT'S YOUR TURN NOW</span>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#0F766E', lineHeight: 1.45, fontWeight: '500' }}>
+            <div style={{ fontSize: '0.88rem', color: '#E0F2FE', lineHeight: 1.45, fontWeight: '500' }}>
               Your token <strong>{data.token}</strong> has been called. Please proceed immediately to the consultation room.
             </div>
           </div>
@@ -303,19 +303,20 @@ export default function PatientQueue() {
         {isApproaching && (
           <div
             style={{
-              background: '#FFFBEB',
-              border: '1px solid #FDE68A',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.08) 100%)',
+              border: '1px solid rgba(245, 158, 11, 0.5)',
               borderLeft: '4px solid #F59E0B',
-              borderRadius: '8px',
-              padding: '0.85rem 0.9rem',
-              marginBottom: '1.15rem'
+              borderRadius: '10px',
+              padding: '0.95rem 1rem',
+              marginBottom: '1.35rem',
+              boxShadow: '0 0 25px rgba(245, 158, 11, 0.2)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.88rem', fontWeight: '700', color: '#92400E', marginBottom: '0.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.90rem', fontWeight: '800', fontFamily: 'var(--font-heading)', color: '#FDE68A', marginBottom: '0.25rem' }}>
               <span className="status-dot status-dot--waiting" />
               <span>Your Turn is Approaching</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#78350F', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.80rem', color: '#FEF3C7', lineHeight: 1.45 }}>
               Only <strong>{data.patientsAhead}</strong> patient{data.patientsAhead === 1 ? '' : 's'} ahead. Please start making your way back to the consultation area.
             </div>
           </div>
@@ -325,19 +326,20 @@ export default function PatientQueue() {
         {isConsulting && (
           <div
             style={{
-              background: '#F0FDFA',
-              border: '1px solid #CCFBF1',
-              borderRadius: '8px',
-              padding: '0.85rem 0.9rem',
-              marginBottom: '1.15rem',
-              textAlign: 'center'
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+              borderRadius: '10px',
+              padding: '0.95rem 1rem',
+              marginBottom: '1.35rem',
+              textAlign: 'center',
+              boxShadow: '0 0 20px rgba(16, 185, 129, 0.15)'
             }}
           >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', fontWeight: '700', color: '#0F766E' }}>
-              <StethoscopeIcon size={16} color="#0F766E" />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.92rem', fontWeight: '800', fontFamily: 'var(--font-heading)', color: '#34D399' }}>
+              <StethoscopeIcon size={18} color="#34D399" />
               <span>Consultation in Progress</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#0F766E', marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '0.80rem', color: '#A7F3D0', marginTop: '0.2rem' }}>
               You are currently consulting with {data.doctor}.
             </div>
           </div>
@@ -347,19 +349,19 @@ export default function PatientQueue() {
         {isCompleted && (
           <div
             style={{
-              background: '#F0FDF4',
-              border: '1px solid #BBF7D0',
-              borderRadius: '8px',
-              padding: '0.9rem',
-              marginBottom: '1.15rem',
+              background: 'rgba(100, 116, 139, 0.14)',
+              border: '1px solid rgba(100, 116, 139, 0.3)',
+              borderRadius: '10px',
+              padding: '1rem',
+              marginBottom: '1.35rem',
               textAlign: 'center'
             }}
           >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.92rem', fontWeight: '700', color: '#166534', marginBottom: '0.2rem' }}>
-              <CheckCircleIcon size={16} color="#166534" />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.95rem', fontWeight: '800', fontFamily: 'var(--font-heading)', color: '#CBD5E1', marginBottom: '0.25rem' }}>
+              <CheckCircleIcon size={18} color="#10B981" />
               <span>Consultation Completed</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#166534' }}>
+            <div style={{ fontSize: '0.80rem', color: '#94A3B8' }}>
               Thank you for visiting today. Wishing you a swift recovery!
             </div>
           </div>
@@ -369,19 +371,19 @@ export default function PatientQueue() {
         {data.status === 'CANCELLED' && (
           <div
             style={{
-              background: '#FEF2F2',
-              border: '1px solid #FECACA',
-              borderRadius: '8px',
-              padding: '0.9rem',
-              marginBottom: '1.15rem',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '10px',
+              padding: '1rem',
+              marginBottom: '1.35rem',
               textAlign: 'center'
             }}
           >
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.92rem', fontWeight: '700', color: '#991B1B', marginBottom: '0.2rem' }}>
-              <XCircleIcon size={16} color="#DC2626" />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.95rem', fontWeight: '800', color: '#FCA5A5', marginBottom: '0.25rem' }}>
+              <XCircleIcon size={18} color="#F87171" />
               <span>Consultation Token Cancelled</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#7F1D1D', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '0.80rem', color: '#FECACA', lineHeight: 1.45 }}>
               This token has been cancelled. If this was done in error or you need assistance, please speak with the outpatient reception desk.
             </div>
           </div>
@@ -391,19 +393,19 @@ export default function PatientQueue() {
         {data.status === 'NO_SHOW' && (
           <div
             style={{
-              background: '#FFFBEB',
-              border: '1px solid #FDE68A',
+              background: 'rgba(245, 158, 11, 0.15)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
               borderLeft: '4px solid #F59E0B',
-              borderRadius: '8px',
-              padding: '0.85rem 0.9rem',
-              marginBottom: '1.15rem'
+              borderRadius: '10px',
+              padding: '0.95rem 1rem',
+              marginBottom: '1.35rem'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.88rem', fontWeight: '700', color: '#92400E', marginBottom: '0.2rem' }}>
-              <AlertTriangleIcon size={16} color="#D97706" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.90rem', fontWeight: '800', color: '#FCD34D', marginBottom: '0.25rem' }}>
+              <AlertTriangleIcon size={18} color="#FBBF24" />
               <span>Marked as No-Show</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#78350F', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '0.80rem', color: '#FDE68A', lineHeight: 1.45 }}>
               You were not present when your token was called. Please check in with reception to rejoin the queue or receive a new token.
             </div>
           </div>
@@ -416,15 +418,15 @@ export default function PatientQueue() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.45rem',
-              padding: '0.45rem 0.75rem',
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              borderRadius: '6px',
-              marginBottom: '1.15rem',
-              fontSize: '0.82rem',
-              fontWeight: '500',
-              color: '#334155',
+              gap: '0.5rem',
+              padding: '0.55rem 0.85rem',
+              background: 'rgba(22, 32, 54, 0.65)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '8px',
+              marginBottom: '1.35rem',
+              fontSize: '0.84rem',
+              fontWeight: '600',
+              color: 'var(--text-secondary)',
               textAlign: 'center'
             }}
           >
@@ -440,7 +442,7 @@ export default function PatientQueue() {
             <div className="patient-metric-label">Serving</div>
             <div
               className="patient-metric-value"
-              style={{ color: data.currentToken ? '#0D9488' : '#94A3B8' }}
+              style={{ color: data.currentToken ? 'var(--primary-cyan)' : 'var(--text-muted)' }}
             >
               {data.currentToken || '—'}
             </div>
@@ -451,7 +453,7 @@ export default function PatientQueue() {
             <div className="patient-metric-label">Position</div>
             <div
               className="patient-metric-value"
-              style={{ color: data.position !== null ? '#0F172A' : '#94A3B8' }}
+              style={{ color: data.position !== null ? 'var(--text-primary)' : 'var(--text-muted)' }}
             >
               {data.position !== null ? `#${data.position}` : '—'}
             </div>
@@ -462,7 +464,7 @@ export default function PatientQueue() {
             <div className="patient-metric-label">Ahead</div>
             <div
               className="patient-metric-value"
-              style={{ color: data.patientsAhead > 0 ? '#D97706' : '#10B981' }}
+              style={{ color: data.patientsAhead > 0 ? '#FBBF24' : '#34D399' }}
             >
               {data.patientsAhead !== null ? data.patientsAhead : '0'}
             </div>
@@ -473,21 +475,21 @@ export default function PatientQueue() {
         {['WAITING', 'CALLED'].includes(data.status) && (
           <div
             style={{
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              borderRadius: '8px',
-              padding: '0.75rem 0.85rem',
-              marginBottom: '1.15rem',
+              background: 'rgba(22, 32, 54, 0.55)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '10px',
+              padding: '0.85rem 0.95rem',
+              marginBottom: '1.35rem',
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '0.65rem'
+              gap: '0.75rem'
             }}
           >
-            <div style={{ marginTop: '0.15rem', flexShrink: 0 }}>
-              <ClockIcon size={16} color="#0D9488" />
+            <div style={{ marginTop: '0.2rem', flexShrink: 0 }}>
+              <ClockIcon size={16} color="var(--primary-cyan)" />
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.45 }}>
-              <strong style={{ color: '#0F172A' }}>Virtual Queue Active.</strong> You may relax in the cafeteria, outdoor courtyard, or lobby. This pass updates automatically in real-time.
+            <div style={{ fontSize: '0.80rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Virtual Queue Active.</strong> You may relax in the cafeteria, outdoor courtyard, or lobby. This pass updates automatically in real-time.
             </div>
           </div>
         )}
@@ -496,28 +498,28 @@ export default function PatientQueue() {
         {browserPermission === 'default' && ['WAITING', 'CALLED'].includes(data.status) && (
           <div
             style={{
-              background: '#F0F9FF',
-              border: '1px solid #BAE6FD',
-              borderRadius: '8px',
-              padding: '0.75rem 0.85rem',
-              marginBottom: '1.15rem',
+              background: 'rgba(6, 182, 212, 0.1)',
+              border: '1px solid rgba(6, 182, 212, 0.35)',
+              borderRadius: '10px',
+              padding: '0.85rem 0.95rem',
+              marginBottom: '1.35rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '0.5rem',
+              gap: '0.65rem',
               flexWrap: 'wrap',
             }}
           >
-            <div style={{ fontSize: '0.76rem', color: '#0369A1', flex: '1 1 200px' }}>
+            <div style={{ fontSize: '0.80rem', color: '#E0F2FE', flex: '1 1 200px' }}>
               Want your device to ring when your turn approaches?
             </div>
             <button
               onClick={requestBrowserPermission}
               className="btn-primary"
               style={{
-                padding: '0.35rem 0.65rem',
-                fontSize: '0.74rem',
-                minHeight: '32px',
+                padding: '0.40rem 0.75rem',
+                fontSize: '0.76rem',
+                minHeight: '34px',
                 flexShrink: 0,
               }}
             >
@@ -532,11 +534,11 @@ export default function PatientQueue() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.35rem',
-              marginBottom: '1.15rem',
-              fontSize: '0.72rem',
-              color: '#0F766E',
-              fontWeight: '500',
+              gap: '0.4rem',
+              marginBottom: '1.35rem',
+              fontSize: '0.74rem',
+              color: '#34D399',
+              fontWeight: '600',
             }}
           >
             <CheckCircleIcon size={14} color="#10B981" />
@@ -548,64 +550,65 @@ export default function PatientQueue() {
         {data.status === 'WAITING' && (
           <div
             style={{
-              background: '#F0FDFA',
-              border: '1px solid #99F6E4',
-              borderRadius: '8px',
-              padding: '0.85rem 0.95rem',
-              marginBottom: '1.15rem',
-              textAlign: 'center'
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(6, 182, 212, 0.08) 100%)',
+              border: '1px solid rgba(99, 102, 241, 0.35)',
+              borderRadius: '12px',
+              padding: '1.1rem 1.15rem',
+              marginBottom: '1.35rem',
+              textAlign: 'center',
+              boxShadow: '0 0 30px rgba(99, 102, 241, 0.15)'
             }}
           >
             <div
               style={{
-                fontSize: '0.70rem',
+                fontSize: '0.72rem',
                 textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: '#0F766E',
+                letterSpacing: '0.08em',
+                color: '#A78BFA',
                 fontWeight: '700',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem'
+                gap: '0.4rem'
               }}
             >
-              <PulseIcon size={13} color="#0D9488" />
+              <PulseIcon size={14} color="var(--primary-cyan)" />
               <span>AI-Estimated Waiting Time</span>
             </div>
 
             {refreshing && !data.prediction ? (
-              <div style={{ fontSize: '0.85rem', color: '#64748B', margin: '0.45rem 0', fontWeight: '500' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0', fontWeight: '500' }}>
                 Calculating estimated wait...
               </div>
             ) : data.patientsAhead === 0 ? (
-              <div style={{ margin: '0.35rem 0' }}>
+              <div style={{ margin: '0.4rem 0' }}>
                 <div className="patient-prediction-value">
                   ~2 min
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#0D9488', fontWeight: '600', marginTop: '0.15rem' }}>
+                <div style={{ fontSize: '0.80rem', color: 'var(--primary-emerald-light)', fontWeight: '700', marginTop: '0.2rem' }}>
                   You are next in line — please be prepared
                 </div>
               </div>
             ) : data.prediction && data.prediction.lower_bound_minutes ? (
-              <div style={{ margin: '0.35rem 0' }}>
+              <div style={{ margin: '0.4rem 0' }}>
                 <div className="patient-prediction-value">
                   {data.prediction.lower_bound_minutes}–{data.prediction.upper_bound_minutes} min
                 </div>
-                <div style={{ fontSize: '0.76rem', color: '#0F766E', marginTop: '0.2rem', fontWeight: '500' }}>
+                <div style={{ fontSize: '0.78rem', color: '#93C5FD', marginTop: '0.25rem', fontWeight: '500' }}>
                   {data.prediction.message || 'Estimated wait based on current queue conditions'}
                 </div>
                 <div
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.3rem',
-                    marginTop: '0.35rem',
-                    fontSize: '0.68rem',
-                    color: '#64748B',
-                    background: '#FFFFFF',
-                    padding: '0.2rem 0.55rem',
-                    borderRadius: '4px',
-                    border: '1px solid #CCFBF1'
+                    gap: '0.35rem',
+                    marginTop: '0.45rem',
+                    fontSize: '0.70rem',
+                    color: '#38BDF8',
+                    background: 'rgba(15, 23, 42, 0.85)',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(6, 182, 212, 0.35)'
                   }}
                 >
                   <span>
@@ -618,7 +621,7 @@ export default function PatientQueue() {
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.4rem 0' }}>
+              <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '0.45rem 0' }}>
                 Estimated wait temporarily unavailable — learning from queue telemetry.
               </div>
             )}
@@ -631,12 +634,12 @@ export default function PatientQueue() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid #E2E8F0',
-            fontSize: '0.72rem',
-            color: '#64748B',
+            paddingTop: '0.85rem',
+            borderTop: '1px solid var(--border-subtle)',
+            fontSize: '0.74rem',
+            color: 'var(--text-muted)',
             flexWrap: 'wrap',
-            gap: '0.4rem'
+            gap: '0.5rem'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>

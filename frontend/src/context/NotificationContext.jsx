@@ -113,9 +113,19 @@ export function NotificationProvider({ children }) {
           {notifications.map((n) => {
             const isTurn = n.type === 'TURN';
             const isApproaching = n.type === 'APPROACHING';
-            const bg = isTurn ? '#F0FDFA' : isApproaching ? '#FFFBEB' : '#FFFFFF';
-            const borderColor = isTurn ? '#0D9488' : isApproaching ? '#F59E0B' : '#E2E8F0';
-            const textColor = isTurn ? '#0F5147' : isApproaching ? '#92400E' : '#1E293B';
+            const bg = isTurn
+              ? 'rgba(13, 27, 30, 0.94)'
+              : isApproaching
+              ? 'rgba(30, 24, 12, 0.94)'
+              : 'rgba(13, 19, 34, 0.94)';
+            const borderColor = isTurn ? '#06B6D4' : isApproaching ? '#F59E0B' : 'rgba(255, 255, 255, 0.12)';
+            const accentGlow = isTurn
+              ? '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(6, 182, 212, 0.25)'
+              : isApproaching
+              ? '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(245, 158, 11, 0.25)'
+              : '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 0, 0, 0.4)';
+            const titleColor = isTurn ? '#38BDF8' : isApproaching ? '#FBBF24' : '#F8FAFC';
+            const textColor = '#CBD5E1';
 
             return (
               <div
@@ -125,15 +135,17 @@ export function NotificationProvider({ children }) {
                 style={{
                   pointerEvents: 'auto',
                   background: bg,
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
                   border: `1px solid ${borderColor}`,
                   borderLeft: `4px solid ${borderColor}`,
-                  borderRadius: '8px',
-                  padding: '0.85rem 1rem',
-                  boxShadow: '0 8px 24px -4px rgba(15, 23, 42, 0.12), 0 2px 6px -1px rgba(15, 23, 42, 0.08)',
+                  borderRadius: '12px',
+                  padding: '0.9rem 1.1rem',
+                  boxShadow: accentGlow,
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  gap: '0.75rem',
+                  gap: '0.85rem',
                   animation: 'slideInRight 0.25s ease-out',
                 }}
               >
@@ -143,11 +155,12 @@ export function NotificationProvider({ children }) {
                       style={{
                         fontSize: '0.88rem',
                         fontWeight: '700',
-                        color: textColor,
+                        color: titleColor,
+                        fontFamily: "'Outfit', sans-serif",
                         marginBottom: '0.2rem',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.35rem',
+                        gap: '0.45rem',
                       }}
                     >
                       <span
@@ -157,6 +170,7 @@ export function NotificationProvider({ children }) {
                           borderRadius: '50%',
                           backgroundColor: borderColor,
                           display: 'inline-block',
+                          boxShadow: `0 0 8px ${borderColor}`,
                         }}
                       />
                       <span>{n.title}</span>
@@ -166,8 +180,7 @@ export function NotificationProvider({ children }) {
                     style={{
                       fontSize: '0.82rem',
                       color: textColor,
-                      lineHeight: '1.4',
-                      opacity: 0.95,
+                      lineHeight: '1.45',
                     }}
                   >
                     {n.message}

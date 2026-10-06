@@ -53,9 +53,9 @@ export default function DashboardLayout({ allowedRoles = [] }) {
 
   return (
     <div className="app">
-      {/* Top Navigation Bar: Minimal, Clean, Light */}
+      {/* Top Navigation Bar: Minimal, Clean, Luxury */}
       <header className="header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
           {/* Mobile Hamburger Button */}
           <div className="header__mobile-actions">
             <button
@@ -64,14 +64,14 @@ export default function DashboardLayout({ allowedRoles = [] }) {
               aria-label="Open Navigation Menu"
               title="Open Navigation Menu"
             >
-              <MenuIcon size={20} color="#0F5147" />
+              <MenuIcon size={20} color="var(--primary-cyan)" />
             </button>
           </div>
 
           {/* Brand Logo & Title */}
           <div className="header__brand">
             <div className="header__icon">
-              <MedicalCrossIcon size={20} color="#FFFFFF" />
+              <MedicalCrossIcon size={20} color="#041017" />
             </div>
             <div>
               <div className="header__title">Invisible Queue AI</div>
@@ -84,10 +84,10 @@ export default function DashboardLayout({ allowedRoles = [] }) {
 
         {/* Desktop Navigation Links */}
         <nav className="header__nav-desktop">
-          <span style={{ fontSize: '0.82rem', fontWeight: '600', color: '#0F5147', borderBottom: '2px solid #0D9488', paddingBottom: '0.25rem', cursor: 'pointer' }}>
+          <span style={{ fontSize: '0.84rem', fontWeight: '700', color: 'var(--primary-cyan)', borderBottom: '2px solid var(--primary-cyan)', paddingBottom: '0.25rem', cursor: 'pointer' }}>
             {user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}
           </span>
-          <span style={{ fontSize: '0.82rem', fontWeight: '500', color: '#64748B', cursor: 'default' }}>
+          <span style={{ fontSize: '0.84rem', fontWeight: '500', color: 'var(--text-secondary)', cursor: 'default' }}>
             {user.role === 'RECEPTIONIST' ? 'Daily Register' : user.role === 'DOCTOR' ? 'Patient Queue' : 'Departments & Staff'}
           </span>
         </nav>
@@ -95,7 +95,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
         {/* Desktop User Info & Sign Out */}
         <div className="header__user-desktop">
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0F172A' }}>
+            <span style={{ fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-primary)' }}>
               {user.name}
             </span>
             <span className="header__badge">
@@ -107,7 +107,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
             onClick={handleLogout}
             className="btn-secondary"
             style={{
-              padding: '0.45rem 0.9rem',
+              padding: '0.45rem 0.95rem',
               fontSize: '0.82rem',
               borderRadius: '8px',
               minHeight: '36px'
@@ -135,11 +135,11 @@ export default function DashboardLayout({ allowedRoles = [] }) {
           />
           <div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="Navigation Drawer">
             <div className="mobile-drawer__header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div className="header__icon" style={{ width: '30px', height: '30px' }}>
-                  <MedicalCrossIcon size={16} color="#FFFFFF" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div className="header__icon" style={{ width: '32px', height: '32px' }}>
+                  <MedicalCrossIcon size={16} color="#041017" />
                 </div>
-                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#0F5147' }}>
+                <span style={{ fontWeight: '800', fontFamily: 'var(--font-heading)', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
                   Invisible Queue AI
                 </span>
               </div>
@@ -148,16 +148,16 @@ export default function DashboardLayout({ allowedRoles = [] }) {
                 className="mobile-drawer__close"
                 aria-label="Close Navigation Menu"
               >
-                <CloseIcon size={18} color="#64748B" />
+                <CloseIcon size={18} color="var(--text-secondary)" />
               </button>
             </div>
 
             {/* User profile inside drawer */}
             <div className="mobile-drawer__user-card">
-              <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0F172A' }}>
+              <div style={{ fontSize: '0.90rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {user.name}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748B', marginBottom: '0.4rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
                 {user.email}
               </div>
               <span className="header__badge">
@@ -167,15 +167,15 @@ export default function DashboardLayout({ allowedRoles = [] }) {
 
             {/* Navigation items */}
             <div className="mobile-drawer__nav-list">
-              <div style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: '#94A3B8', letterSpacing: '0.05em', marginBottom: '0.25rem', paddingLeft: '0.5rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '0.25rem', paddingLeft: '0.5rem' }}>
                 Active Workspace
               </div>
               <div className="mobile-drawer__nav-item mobile-drawer__nav-item--active">
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0D9488', display: 'inline-block', flexShrink: 0 }} />
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-cyan)', display: 'inline-block', flexShrink: 0, boxShadow: '0 0 8px var(--primary-cyan)' }} />
                 <span>{user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}</span>
               </div>
-              <div className="mobile-drawer__nav-item" style={{ opacity: 0.7 }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', border: '1.5px solid #94A3B8', display: 'inline-block', flexShrink: 0 }} />
+              <div className="mobile-drawer__nav-item" style={{ opacity: 0.65 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', border: '1.5px solid var(--text-muted)', display: 'inline-block', flexShrink: 0 }} />
                 <span>{user.role === 'RECEPTIONIST' ? 'Daily Register' : user.role === 'DOCTOR' ? 'Patient Queue' : 'Departments & Staff'}</span>
               </div>
             </div>
@@ -185,9 +185,9 @@ export default function DashboardLayout({ allowedRoles = [] }) {
               <button
                 onClick={handleLogout}
                 className="btn-secondary"
-                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', color: '#EF4444', borderColor: '#FECACA' }}
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.35)' }}
               >
-                <LogOutIcon size={16} color="#EF4444" />
+                <LogOutIcon size={16} color="#F87171" />
                 <span>Sign Out</span>
               </button>
             </div>
