@@ -1,5 +1,6 @@
 import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { MedicalCrossIcon } from '../components/Icons';
 
 export default function DashboardLayout({ allowedRoles = [] }) {
   const { user, loading, logout } = useAuth();
@@ -38,7 +39,9 @@ export default function DashboardLayout({ allowedRoles = [] }) {
       {/* Top Navigation Bar: Minimal, Clean, Light */}
       <header className="header">
         <div className="header__brand">
-          <div className="header__icon">🏥</div>
+          <div className="header__icon">
+            <MedicalCrossIcon size={20} color="#FFFFFF" />
+          </div>
           <div>
             <div className="header__title">Invisible Queue AI</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { queueAPI, departmentsAPI, doctorsAPI, patientsAPI } from '../../services/api';
+import { CopyIcon, PrinterIcon, QrCodeIcon, AlertTriangleIcon, CheckCircleIcon, CloseIcon } from '../../components/Icons';
 
 export default function ReceptionistDashboard() {
   const [queue, setQueue] = useState([]);
@@ -196,15 +197,16 @@ export default function ReceptionistDashboard() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <span style={{ color: '#0F766E', fontWeight: '700', fontSize: '0.9rem' }}>
-                  ✓ Token Generated Successfully
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#0F766E', fontWeight: '700', fontSize: '0.9rem' }}>
+                  <CheckCircleIcon size={16} color="#0F766E" />
+                  <span>Token Generated Successfully</span>
                 </span>
                 <button
                   onClick={() => setMessage(null)}
-                  style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '1rem' }}
+                  style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                   title="Dismiss"
                 >
-                  ✕
+                  <CloseIcon size={16} color="#64748B" />
                 </button>
               </div>
 
@@ -258,17 +260,19 @@ export default function ReceptionistDashboard() {
                       type="button"
                       onClick={() => copyToClipboard(`${window.location.origin}/queue/${message.data.queue_access_token}`)}
                       className="btn-secondary"
-                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem' }}
+                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
-                      {copiedLink ? '✓ Copied' : '📋 Copy Link'}
+                      <CopyIcon size={13} color="currentColor" />
+                      <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => printTokenSlip(message.data)}
                       className="btn-primary"
-                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem' }}
+                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
-                      🖨️ Print Slip
+                      <PrinterIcon size={13} color="#FFFFFF" />
+                      <span>Print Slip</span>
                     </button>
                   </div>
 
@@ -301,10 +305,14 @@ export default function ReceptionistDashboard() {
                 padding: '0.75rem',
                 borderRadius: '8px',
                 marginBottom: '1rem',
-                fontSize: '0.85rem'
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
               }}
             >
-              ⚠️ {message.text}
+              <AlertTriangleIcon size={16} color="#DC2626" />
+              <span>{message.text}</span>
             </div>
           )}
 
@@ -491,10 +499,14 @@ export default function ReceptionistDashboard() {
                         style={{
                           padding: '0.3rem 0.65rem',
                           fontSize: '0.76rem',
-                          borderRadius: '6px'
+                          borderRadius: '6px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
                         }}
                       >
-                        📱 QR & Link
+                        <QrCodeIcon size={13} color="currentColor" />
+                        <span>QR & Link</span>
                       </button>
                     ) : (
                       <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
@@ -545,9 +557,9 @@ export default function ReceptionistDashboard() {
               </h3>
               <button
                 onClick={() => setActiveQRModal(null)}
-                style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.2rem', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                ✕
+                <CloseIcon size={18} color="#64748B" />
               </button>
             </div>
 
@@ -586,16 +598,18 @@ export default function ReceptionistDashboard() {
               <button
                 onClick={() => copyToClipboard(`${window.location.origin}/queue/${activeQRModal.queue_access_token}`, true)}
                 className="btn-secondary"
-                style={{ flex: 1 }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
               >
-                {modalCopied ? '✓ Copied Link' : '📋 Copy Link'}
+                <CopyIcon size={14} color="currentColor" />
+                <span>{modalCopied ? 'Copied' : 'Copy Link'}</span>
               </button>
               <button
                 onClick={() => printTokenSlip(activeQRModal)}
                 className="btn-primary"
-                style={{ flex: 1 }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
               >
-                🖨️ Print Slip
+                <PrinterIcon size={14} color="#FFFFFF" />
+                <span>Print Slip</span>
               </button>
             </div>
 

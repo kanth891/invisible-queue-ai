@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { MedicalCrossIcon, AlertTriangleIcon, UserIcon, StethoscopeIcon, ShieldCheckIcon } from '../../components/Icons';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -66,12 +67,11 @@ export default function Login() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '1.5rem',
               margin: '0 auto 1rem',
               boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)'
             }}
           >
-            🏥
+            <MedicalCrossIcon size={24} color="#FFFFFF" />
           </div>
           <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-primary, #1E293B)', marginBottom: '0.35rem' }}>
             Invisible Queue AI
@@ -97,7 +97,7 @@ export default function Login() {
               gap: '0.5rem'
             }}
           >
-            <span>⚠️</span>
+            <AlertTriangleIcon size={16} color="#DC2626" />
             <span>{error}</span>
           </div>
         )}
@@ -182,7 +182,9 @@ export default function Login() {
               className="btn-secondary"
               style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
             >
-              <span>👩‍💼 Receptionist</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <UserIcon size={14} color="#0D9488" /> Receptionist
+              </span>
               <span style={{ color: 'var(--text-muted)' }}>receptionist1@hospital.com</span>
             </button>
             <button
@@ -191,7 +193,9 @@ export default function Login() {
               className="btn-secondary"
               style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
             >
-              <span>👨‍⚕️ Doctor (General Medicine)</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <StethoscopeIcon size={14} color="#0D9488" /> Doctor (General Medicine)
+              </span>
               <span style={{ color: 'var(--text-muted)' }}>dr.ravi@hospital.com</span>
             </button>
             <button
@@ -200,7 +204,9 @@ export default function Login() {
               className="btn-secondary"
               style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
             >
-              <span>⚙️ Administrator</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <ShieldCheckIcon size={14} color="#0D9488" /> Administrator
+              </span>
               <span style={{ color: 'var(--text-muted)' }}>admin@hospital.com</span>
             </button>
           </div>

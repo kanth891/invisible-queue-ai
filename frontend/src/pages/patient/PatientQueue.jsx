@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { queueAPI } from '../../services/api';
+import { MedicalCrossIcon, SearchIcon, StethoscopeIcon, CheckCircleIcon, ClockIcon } from '../../components/Icons';
 
 const DEFAULT_POLL_INTERVAL_MS = 6000;
 
@@ -74,7 +75,9 @@ export default function PatientQueue() {
       <div style={containerStyle}>
         <div style={{ ...cardStyle, border: '1px solid #FECACA' }}>
           <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🔍</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+              <SearchIcon size={36} color="#EF4444" />
+            </div>
             <h2 style={{ color: '#EF4444', fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.5rem' }}>
               Queue Token Not Found
             </h2>
@@ -114,11 +117,10 @@ export default function PatientQueue() {
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.9rem'
+              justifyContent: 'center'
             }}
           >
-            🏥
+            <MedicalCrossIcon size={16} color="#FFFFFF" />
           </div>
           <span style={{ fontSize: '1rem', fontWeight: '800', letterSpacing: '-0.01em', color: '#1E293B' }}>
             Invisible Queue AI
@@ -230,8 +232,9 @@ export default function PatientQueue() {
               textAlign: 'center'
             }}
           >
-            <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0F766E', marginBottom: '0.2rem' }}>
-              🩺 Consultation In Progress
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.95rem', fontWeight: '700', color: '#0F766E', marginBottom: '0.2rem' }}>
+              <StethoscopeIcon size={18} color="#0F766E" />
+              <span>Consultation In Progress</span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#0F766E' }}>
               You are currently consulting with {data.doctor}.
@@ -251,8 +254,9 @@ export default function PatientQueue() {
               textAlign: 'center'
             }}
           >
-            <div style={{ fontSize: '1.05rem', fontWeight: '700', color: '#065F46', marginBottom: '0.25rem' }}>
-              ✓ Consultation Completed
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', fontSize: '1.05rem', fontWeight: '700', color: '#065F46', marginBottom: '0.25rem' }}>
+              <CheckCircleIcon size={18} color="#065F46" />
+              <span>Consultation Completed</span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#065F46' }}>
               Thank you for visiting today. We wish you a speedy recovery!
@@ -352,7 +356,9 @@ export default function PatientQueue() {
               gap: '0.65rem'
             }}
           >
-            <span style={{ fontSize: '1.15rem', lineHeight: '1.2' }}>☕</span>
+            <div style={{ marginTop: '0.1rem', flexShrink: 0 }}>
+              <ClockIcon size={18} color="#0D9488" />
+            </div>
             <div style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.5 }}>
               <strong style={{ color: '#0F766E' }}>You do not need to wait in the hallway.</strong> Feel free to visit the cafe, pharmacy, or outdoor benches. Keep this page open to track your turn in real time.
             </div>

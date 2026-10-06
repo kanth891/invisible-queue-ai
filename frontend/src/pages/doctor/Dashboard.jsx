@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { queueAPI } from '../../services/api';
+import { StethoscopeIcon, CheckCircleIcon } from '../../components/Icons';
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -141,10 +142,15 @@ export default function DoctorDashboard() {
                       borderRadius: '8px',
                       fontWeight: '600',
                       cursor: 'pointer',
-                      fontSize: '0.9rem'
+                      fontSize: '0.9rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.4rem'
                     }}
                   >
-                    ✓ Complete Consultation
+                    <CheckCircleIcon size={16} color="#FFFFFF" />
+                    <span>Complete Consultation</span>
                   </button>
                 )}
 
@@ -160,7 +166,9 @@ export default function DoctorDashboard() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🩺</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                <StethoscopeIcon size={32} color="#0D9488" />
+              </div>
               <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1E293B', marginBottom: '0.25rem' }}>
                 No Active Patient in Room
               </div>

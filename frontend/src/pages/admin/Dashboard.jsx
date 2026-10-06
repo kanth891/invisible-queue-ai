@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { queueAPI, departmentsAPI, doctorsAPI, usersAPI } from '../../services/api';
+import { BarChartIcon, BuildingIcon, StethoscopeIcon, UsersIcon, PulseIcon } from '../../components/Icons';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -65,16 +66,28 @@ export default function AdminDashboard() {
       {/* Navigation Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.75rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
         <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
-          📊 Overview
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <BarChartIcon size={14} color="currentColor" />
+            <span>Overview</span>
+          </span>
         </Tab>
         <Tab active={activeTab === 'departments'} onClick={() => setActiveTab('departments')}>
-          🏢 Departments ({departments.length})
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <BuildingIcon size={14} color="currentColor" />
+            <span>Departments ({departments.length})</span>
+          </span>
         </Tab>
         <Tab active={activeTab === 'doctors'} onClick={() => setActiveTab('doctors')}>
-          👨‍⚕️ Doctors ({doctors.length})
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <StethoscopeIcon size={14} color="currentColor" />
+            <span>Doctors ({doctors.length})</span>
+          </span>
         </Tab>
         <Tab active={activeTab === 'users'} onClick={() => setActiveTab('users')}>
-          👥 System Users ({users.length})
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <UsersIcon size={14} color="currentColor" />
+            <span>System Users ({users.length})</span>
+          </span>
         </Tab>
       </div>
 
@@ -93,10 +106,14 @@ export default function AdminDashboard() {
                 padding: '0.25rem 0.75rem',
                 borderRadius: '100px',
                 fontSize: '0.75rem',
-                fontWeight: '700'
+                fontWeight: '700',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
               }}
             >
-              ⚡ Phase 2 Virtual Queue Active
+              <PulseIcon size={13} color="#0F766E" />
+              <span>Phase 2 Virtual Queue Active</span>
             </span>
           </div>
 
