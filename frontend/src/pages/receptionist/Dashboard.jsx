@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { queueAPI, departmentsAPI, doctorsAPI, patientsAPI } from '../../services/api';
 
 export default function ReceptionistDashboard() {
@@ -14,6 +15,11 @@ export default function ReceptionistDashboard() {
   });
   const [registerLoading, setRegisterLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Modal state for viewing QR of any queue patient
+  const [activeQRModal, setActiveQRModal] = useState(null);
+  const [modalCopied, setModalCopied] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -28,7 +34,7 @@ export default function ReceptionistDashboard() {
       setDepartments(deptRes.data);
       setDoctors(docRes.data);
     } catch (err) {
-      console.error(err);
+      console.error('Receptionist fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -44,6 +50,7 @@ export default function ReceptionistDashboard() {
     e.preventDefault();
     setRegisterLoading(true);
     setMessage(null);
+    setCopiedLink(false);
     try {
       // 1. Create Patient
       const patientRes = await patientsAPI.create({
@@ -80,27 +87,212 @@ export default function ReceptionistDashboard() {
     }
   };
 
+  const copyToClipboard = async (text, isModal = false) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (isModal) {
+        setModalCopied(true);
+        setTimeout(() => setModalCopied(false), 2000);
+      } else {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }
+    } catch (err) {
+      prompt('Copy this link:', text);
+    }
+  };
+
+  const printTokenSlip = (tokenData) => {
+    const queueUrl = `${window.location.origin}/queue/${tokenData.queue_access_token}`;
+    const printWindow = window.open('', '_blank', 'width=450,height=600');
+    if (!printWindow) {
+      alert('Pop-up was blocked. Please allow pop-ups for this site to print tokens.');
+      return;
+    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Token Slip - ${tokenData.token_number}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; color: #111; }
+            .hospital { font-size: 20px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px; }
+            .subtitle { font-size: 11px; color: #666; margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
+            .token-box { margin: 16px 0; padding: 14px; border: 2px dashed #111; border-radius: 8px; }
+            .token-label { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #555; }
+            .token { font-size: 52px; font-weight: 900; letter-spacing: 0.05em; margin: 4px 0; }
+            .info { font-size: 13px; text-align: left; background: #f5f5f7; padding: 12px; border-radius: 6px; margin: 16px 0; line-height: 1.6; }
+            .qr-container { margin: 16px auto; }
+            .instructions { font-size: 12px; color: #444; margin-top: 14px; line-height: 1.4; border-top: 1px solid #ddd; padding-top: 12px; }
+            .url { font-size: 10px; color: #777; margin-top: 8px; word-break: break-all; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="hospital">Invisible Queue AI</div>
+          <div class="subtitle">Smart Hospital Virtual Queue System</div>
+          <div class="token-box">
+            <div class="token-label">Digital Queue Token</div>
+            <div class="token">${tokenData.token_number}</div>
+          </div>
+          <div class="info">
+            <div><strong>Patient:</strong> ${tokenData.patient_name || 'Patient'}</div>
+            <div><strong>Doctor:</strong> ${tokenData.doctor_name || 'Assigned Doctor'}</div>
+            <div><strong>Department:</strong> ${tokenData.department_name || 'Department'}</div>
+            <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
+          </div>
+          <div class="instructions">
+            <strong>Scan the QR code to monitor your queue remotely!</strong><br/>
+            You do NOT need to wait near the consultation room.<br/>
+            Return when your turn approaches.
+          </div>
+          <div class="url">${queueUrl}</div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 400);
+  };
+
   if (loading && !queue.length) return <div className="spinner" />;
 
   const filteredDoctors = doctors.filter(d => d.department_id === parseInt(formData.department_id));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '2rem' }}>
       
       {/* Registration Panel */}
       <div>
         <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ marginBottom: '1rem', color: 'var(--accent-cyan)' }}>Register Patient</h3>
           
+          {/* Success Banner with QR Code & Remote Queue Link */}
           {message && message.type === 'success' && (
-            <div style={{ background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52,211,153,0.3)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-              <div style={{ color: 'var(--accent-emerald)', fontWeight: 'bold', marginBottom: '0.5rem' }}>Patient Registered Successfully</div>
-              <div style={{ fontSize: '0.9rem' }}>
-                Token: <strong style={{color:'white'}}>{message.data.token_number}</strong><br/>
-                Patient: {message.data.patient_name}<br/>
-                Doctor: {message.data.doctor_name}<br/>
-                Department: {message.data.department_name}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(52, 211, 153, 0.12) 0%, rgba(16, 185, 129, 0.05) 100%)',
+              border: '1px solid rgba(52, 211, 153, 0.4)',
+              padding: '1.25rem',
+              borderRadius: '12px',
+              marginBottom: '1.25rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <span style={{ color: 'var(--accent-emerald)', fontWeight: 'bold', fontSize: '0.95rem' }}>
+                  ✓ Patient Registered Successfully
+                </span>
+                <button
+                  onClick={() => setMessage(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }}
+                  title="Dismiss"
+                >
+                  ✕
+                </button>
               </div>
+
+              {/* Prominent Token Display */}
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>
+                  Assigned Token
+                </div>
+                <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', lineHeight: 1.2 }}>
+                  {message.data.token_number}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)', marginTop: '0.2rem' }}>
+                  {message.data.doctor_name} • {message.data.department_name}
+                </div>
+              </div>
+
+              {/* QR Code Container */}
+              {message.data.queue_access_token && (
+                <div style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  margin: '0.75rem 0'
+                }}>
+                  <QRCodeSVG
+                    value={`${window.location.origin}/queue/${message.data.queue_access_token}`}
+                    size={160}
+                    level="M"
+                    includeMargin={false}
+                  />
+                  <div style={{ color: '#111827', fontSize: '0.75rem', fontWeight: '600', marginTop: '0.5rem', textAlign: 'center' }}>
+                    Scan with phone camera to track queue
+                  </div>
+                </div>
+              )}
+
+              {/* Actions: Copy Link & Print */}
+              {message.data.queue_access_token && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(`${window.location.origin}/queue/${message.data.queue_access_token}`)}
+                      style={{
+                        flex: 1,
+                        padding: '0.6rem',
+                        background: copiedLink ? 'var(--accent-emerald)' : 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      {copiedLink ? '✓ Copied!' : '📋 Copy Queue Link'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => printTokenSlip(message.data)}
+                      style={{
+                        flex: 1,
+                        padding: '0.6rem',
+                        background: 'rgba(99, 102, 241, 0.2)',
+                        color: 'white',
+                        border: '1px solid rgba(99, 102, 241, 0.4)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      🖨️ Print Slip
+                    </button>
+                  </div>
+
+                  <a
+                    href={`/queue/${message.data.queue_access_token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      textAlign: 'center',
+                      fontSize: '0.8rem',
+                      color: 'var(--accent-cyan)',
+                      textDecoration: 'underline',
+                      marginTop: '0.25rem'
+                    }}
+                  >
+                    Open Patient Tracker Page ↗
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
@@ -110,6 +302,7 @@ export default function ReceptionistDashboard() {
             </div>
           )}
 
+          {/* Registration Form */}
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input required placeholder="Patient Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} />
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -133,11 +326,12 @@ export default function ReceptionistDashboard() {
             </select>
 
             <button type="submit" disabled={registerLoading} style={{ padding: '0.75rem', background: 'var(--accent-indigo)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              {registerLoading ? 'Processing...' : 'Generate Token'}
+              {registerLoading ? 'Processing...' : 'Generate Token & QR Code'}
             </button>
           </form>
         </div>
 
+        {/* Stats Panel */}
         {stats && (
           <div className="status-grid" style={{ gridTemplateColumns: '1fr' }}>
             <div className="status-card" style={{ padding: '1rem' }}>
@@ -152,13 +346,41 @@ export default function ReceptionistDashboard() {
                 <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-amber)' }}>{stats.waiting}</div>
               </div>
             </div>
+            <div className="status-card" style={{ padding: '1rem' }}>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>In Consultation</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>{stats.in_consultation}</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Queue View */}
       <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem' }}>Today's Queue</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Today's Virtual Queue</h3>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Patients can monitor status remotely via secure QR access links
+            </span>
+          </div>
+          <button
+            onClick={fetchData}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}
+          >
+            ↻ Refresh
+          </button>
+        </div>
+
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
             <thead>
@@ -168,6 +390,7 @@ export default function ReceptionistDashboard() {
                 <th style={{ padding: '0.75rem' }}>Doctor</th>
                 <th style={{ padding: '0.75rem' }}>Department</th>
                 <th style={{ padding: '0.75rem' }}>Status</th>
+                <th style={{ padding: '0.75rem' }}>Virtual Queue</th>
                 <th style={{ padding: '0.75rem' }}>Actions</th>
               </tr>
             </thead>
@@ -182,8 +405,42 @@ export default function ReceptionistDashboard() {
                     <span style={getStatusStyle(q.status)}>{q.status}</span>
                   </td>
                   <td style={{ padding: '0.75rem' }}>
+                    {q.queue_access_token ? (
+                      <button
+                        onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
+                        style={{
+                          background: 'rgba(99, 102, 241, 0.15)',
+                          border: '1px solid rgba(99, 102, 241, 0.3)',
+                          color: 'var(--accent-indigo)',
+                          padding: '0.3rem 0.6rem',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        📱 View QR / Link
+                      </button>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
                     {q.status === 'WAITING' && (
-                      <button onClick={() => cancelToken(q.id)} style={{ background: 'none', border: '1px solid var(--accent-rose)', color: 'var(--accent-rose)', padding: '0.2rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                      <button
+                        onClick={() => cancelToken(q.id)}
+                        style={{
+                          background: 'none',
+                          border: '1px solid var(--accent-rose)',
+                          color: 'var(--accent-rose)',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem'
+                        }}
+                      >
                         Cancel
                       </button>
                     )}
@@ -192,13 +449,124 @@ export default function ReceptionistDashboard() {
               ))}
               {queue.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No patients in queue today.</td>
+                  <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No patients in queue today.
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* QR Code Modal for any Queue Patient */}
+      {activeQRModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            background: 'var(--bg-card, #111827)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '400px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Patient Virtual Queue</h3>
+              <button
+                onClick={() => setActiveQRModal(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ fontSize: '2.5rem', fontWeight: '900', color: 'white', marginBottom: '0.2rem' }}>
+              {activeQRModal.token_number}
+            </div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              {activeQRModal.patient_name} • {activeQRModal.doctor_name}
+            </div>
+
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'inline-block',
+              margin: '0 auto 1.25rem auto'
+            }}>
+              <QRCodeSVG
+                value={`${window.location.origin}/queue/${activeQRModal.queue_access_token}`}
+                size={180}
+                level="M"
+              />
+            </div>
+
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+              Scan with mobile phone to monitor live queue position remotely.
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+              <button
+                onClick={() => copyToClipboard(`${window.location.origin}/queue/${activeQRModal.queue_access_token}`, true)}
+                style={{
+                  flex: 1,
+                  padding: '0.65rem',
+                  background: modalCopied ? 'var(--accent-emerald)' : 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: '600'
+                }}
+              >
+                {modalCopied ? '✓ Copied' : '📋 Copy Link'}
+              </button>
+              <button
+                onClick={() => printTokenSlip(activeQRModal)}
+                style={{
+                  flex: 1,
+                  padding: '0.65rem',
+                  background: 'var(--accent-indigo)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: '600'
+                }}
+              >
+                🖨️ Print Slip
+              </button>
+            </div>
+
+            <a
+              href={`/queue/${activeQRModal.queue_access_token}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--accent-cyan)',
+                textDecoration: 'underline'
+              }}
+            >
+              Open Tracker in New Tab ↗
+            </a>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
