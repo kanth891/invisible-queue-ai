@@ -47,6 +47,44 @@ async function generateToken(client, departmentId, queueDate) {
   return `${code}-${String(seq).padStart(3, '0')}`;
 }
 
+// Comprehensive clinical specialty priors (in minutes) for Bayesian cold-start estimation
+export const SPECIALTY_CLINICAL_PRIORS = {
+  'general medicine': 11.5,
+  'internal medicine': 12.0,
+  'cardiology': 18.0,
+  'heart': 18.0,
+  'pediatrics': 13.0,
+  'child': 13.0,
+  'orthopedics': 15.0,
+  'ortho': 15.0,
+  'dermatology': 10.0,
+  'skin': 10.0,
+  'neurology': 22.0,
+  'neuro': 22.0,
+  'oncology': 25.0,
+  'cancer': 25.0,
+  'ent': 11.0,
+  'ear': 11.0,
+  'ophthalmology': 12.0,
+  'eye': 12.0,
+  'psychiatry': 28.0,
+  'mental': 28.0,
+  'gynecology': 14.5,
+  'urology': 15.0,
+  'emergency': 9.0,
+  'default': 14.0,
+};
+
+export function resolveSpecialtyPrior(deptName, docSpecialization) {
+  const target = `${deptName || ''} ${docSpecialization || ''}`.toLowerCase();
+  for (const [key, dur] of Object.entries(SPECIALTY_CLINICAL_PRIORS)) {
+    if (key !== 'default' && target.includes(key)) {
+      return dur;
+    }
+  }
+  return SPECIALTY_CLINICAL_PRIORS.default;
+}
+
 /**
  * Compute real-time ML waiting-time prediction for a queue entry.
  * Strictly uses features available at prediction time (no future data leakage).
@@ -151,16 +189,74 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
     );
     const completedToday = parseInt(completedRes.rows[0]?.count || 0, 10);
 
-    // Historical average consultation duration for doctor
+    // Fetch department and doctor metadata
+    let deptName = '';
+    let docSpecialization = '';
+    let docConfiguredDur = null;
+
+    try {
+      const deptDocRes = await pool.query(
+        `SELECT d.name as dept_name, doc.specialization as doc_specialization, doc.avg_consultation_time as doc_configured_dur
+         FROM departments d
+         LEFT JOIN doctors doc ON doc.id = $2
+         WHERE d.id = $1`,
+        [entry.department_id, entry.doctor_id]
+      );
+      if (deptDocRes.rows.length > 0) {
+        deptName = deptDocRes.rows[0].dept_name || '';
+        docSpecialization = deptDocRes.rows[0].doc_specialization || '';
+        docConfiguredDur = deptDocRes.rows[0].doc_configured_dur ? Number(deptDocRes.rows[0].doc_configured_dur) : null;
+      }
+    } catch (metaErr) {
+      // Gracefully continue
+    }
+
+    const clinicalPrior = resolveSpecialtyPrior(deptName, docSpecialization);
+
+    // Historical completed consultation telemetry for doctor
     const docDurRes = await pool.query(
-      `SELECT AVG(EXTRACT(EPOCH FROM (consultation_completed_at - consultation_started_at))/60) as avg_dur
+      `SELECT 
+         COUNT(*) as visit_count,
+         AVG(EXTRACT(EPOCH FROM (consultation_completed_at - consultation_started_at))/60) as avg_dur
        FROM queue_entries
        WHERE doctor_id = $1 AND consultation_completed_at IS NOT NULL AND consultation_started_at IS NOT NULL`,
       [entry.doctor_id]
     );
-    const doctorAvgDuration = docDurRes.rows[0]?.avg_dur
-      ? Math.round(Number(docDurRes.rows[0].avg_dur) * 10) / 10
-      : 12.0;
+    const docVisits = parseInt(docDurRes.rows[0]?.visit_count || 0, 10);
+    const docObservedAvg = docDurRes.rows[0]?.avg_dur ? Number(docDurRes.rows[0].avg_dur) : null;
+
+    // Historical completed consultation telemetry for department
+    const deptDurRes = await pool.query(
+      `SELECT 
+         COUNT(*) as visit_count,
+         AVG(EXTRACT(EPOCH FROM (consultation_completed_at - consultation_started_at))/60) as avg_dur
+       FROM queue_entries
+       WHERE department_id = $1 AND consultation_completed_at IS NOT NULL AND consultation_started_at IS NOT NULL`,
+      [entry.department_id]
+    );
+    const deptVisits = parseInt(deptDurRes.rows[0]?.visit_count || 0, 10);
+    const deptObservedAvg = deptDurRes.rows[0]?.avg_dur ? Number(deptDurRes.rows[0].avg_dur) : null;
+
+    // 3-Tier Hierarchical Bayesian Duration Smoothing
+    // Tier 1: Department Bayesian smoothed mean (M=5 pseudo-observations from clinical specialty prior)
+    const M_dept = 5;
+    const effectiveDeptDur = deptVisits > 0 && deptObservedAvg
+      ? ((deptVisits * deptObservedAvg) + (M_dept * clinicalPrior)) / (deptVisits + M_dept)
+      : clinicalPrior;
+
+    // Tier 2: Doctor baseline prior incorporates configured duration if set, else department smoothed
+    const docPrior = docConfiguredDur && docConfiguredDur > 0
+      ? (docConfiguredDur + effectiveDeptDur) / 2
+      : effectiveDeptDur;
+
+    // Tier 3: Doctor Bayesian smoothed mean (M=3 pseudo-observations from docPrior)
+    const M_doc = 3;
+    const effectiveDoctorDur = docVisits > 0 && docObservedAvg
+      ? ((docVisits * docObservedAvg) + (M_doc * docPrior)) / (docVisits + M_doc)
+      : docPrior;
+
+    const doctorAvgDuration = Math.round(effectiveDoctorDur * 10) / 10;
+    const isColdStart = (docVisits < 3);
 
     const features = {
       patients_ahead: patientsAhead,
@@ -173,6 +269,9 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
       doctor_id: entry.doctor_id,
       doctor_avg_duration: doctorAvgDuration,
       completed_today: completedToday,
+      department_name: deptName,
+      dept_avg_duration: Math.round(effectiveDeptDur * 10) / 10,
+      is_cold_start: isColdStart,
     };
 
     const prediction = await mlClient.predictWaitingTime(features);
@@ -182,8 +281,8 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
       await pool.query(
         `INSERT INTO predictions
           (queue_entry_id, token_number, patients_ahead, predicted_wait_minutes,
-           lower_bound_minutes, upper_bound_minutes, model_version, features_json, is_fallback)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+           lower_bound_minutes, upper_bound_minutes, model_version, features_json, is_fallback, is_cold_start)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [
           entry.id,
           entry.token_number,
@@ -194,10 +293,31 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
           prediction.model_version,
           JSON.stringify(features),
           prediction.is_fallback,
+          prediction.is_cold_start !== undefined ? prediction.is_cold_start : isColdStart,
         ]
       );
     } catch (logErr) {
-      console.warn('[Prediction] Failed to insert prediction log:', logErr.message);
+      try {
+        await pool.query(
+          `INSERT INTO predictions
+            (queue_entry_id, token_number, patients_ahead, predicted_wait_minutes,
+             lower_bound_minutes, upper_bound_minutes, model_version, features_json, is_fallback)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+          [
+            entry.id,
+            entry.token_number,
+            patientsAhead,
+            prediction.predicted_wait_minutes,
+            prediction.lower_bound_minutes,
+            prediction.upper_bound_minutes,
+            prediction.model_version,
+            JSON.stringify(features),
+            prediction.is_fallback,
+          ]
+        );
+      } catch (innerErr) {
+        console.warn('[Prediction] Failed to insert prediction log:', innerErr.message);
+      }
     }
 
     return {
@@ -208,11 +328,14 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
       lower_bound_minutes: prediction.lower_bound_minutes,
       upper_bound_minutes: prediction.upper_bound_minutes,
       model_version: prediction.model_version,
-      confidence_interval: prediction.confidence_interval || '80% empirical prediction interval',
+      confidence_interval: prediction.confidence_interval || (isColdStart ? 'Clinical specialty prior calibration (±35%)' : '80% empirical prediction interval'),
       is_fallback: prediction.is_fallback,
-      message: prediction.is_fallback
-        ? 'Estimated wait based on historical queue flow'
-        : 'Predicted wait based on current queue conditions',
+      is_cold_start: prediction.is_cold_start !== undefined ? prediction.is_cold_start : isColdStart,
+      message: (prediction.is_cold_start || isColdStart)
+        ? (prediction.message || 'Wait estimated using clinical specialty prior and queue pacing')
+        : (prediction.is_fallback
+          ? 'Estimated wait based on historical queue flow'
+          : 'Predicted wait based on current queue conditions'),
       generated_at: new Date().toISOString(),
     };
   } catch (err) {

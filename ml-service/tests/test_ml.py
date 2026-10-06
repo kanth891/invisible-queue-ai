@@ -101,3 +101,42 @@ def test_model_metrics_endpoint():
     assert "selected_model_metrics" in data
     assert data["selected_model_metrics"]["test_mae"] > 0
     assert data["selected_model_metrics"]["test_r2"] > 0.8
+
+def test_cold_start_specialty_prior_prediction():
+    """Verify that a brand-new specialty with cold start uses Bayesian clinical prior."""
+    payload = {
+        "patients_ahead": 3,
+        "department_name": "Oncology",
+        "department_id": 9,
+        "doctor_id": 15,
+        "is_cold_start": True
+    }
+    response = client.post("/predict", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_cold_start"] is True
+    assert data["model_version"] == "v1.0-bayesian-prior"
+    assert "Clinical specialty prior calibration" in data["confidence_interval"]
+    assert data["predicted_wait_minutes"] > 0
+    assert data["lower_bound_minutes"] <= data["predicted_wait_minutes"] <= data["upper_bound_minutes"]
+
+def test_cold_start_specialty_scaling():
+    """Verify that shorter-duration specialties (Dermatology ~10m) predict lower wait than longer ones (Oncology ~25m)."""
+    derm_payload = {
+        "patients_ahead": 4,
+        "department_name": "Dermatology",
+        "is_cold_start": True
+    }
+    onco_payload = {
+        "patients_ahead": 4,
+        "department_name": "Oncology",
+        "is_cold_start": True
+    }
+    derm_res = client.post("/predict", json=derm_payload).json()
+    onco_res = client.post("/predict", json=onco_payload).json()
+
+    assert derm_res["is_cold_start"] is True
+    assert onco_res["is_cold_start"] is True
+    # Oncology consults are clinically longer than Dermatology
+    assert onco_res["predicted_wait_minutes"] > derm_res["predicted_wait_minutes"]
+

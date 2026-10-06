@@ -9,7 +9,7 @@
     "start": "node src/app.js",
     "build": "npm run migrate",
     "migrate": "node src/db/migrate.js",
-    "test": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/api.test.js && node tests/e2e-workflow.test.js && node tests/phase3-multi-queue-simulation.test.js"
+    "test": "node tests/phase2.test.js && node tests/phase3.test.js && node tests/phase4.test.js && node tests/api.test.js && node tests/e2e-workflow.test.js && node tests/phase3-multi-queue-simulation.test.js && node tests/phase3-cold-start.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

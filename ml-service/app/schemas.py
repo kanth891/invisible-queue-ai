@@ -16,6 +16,9 @@ class PredictionRequest(BaseModel):
     doctor_id: Optional[int] = Field(1, ge=1, description="Doctor ID")
     doctor_avg_duration: Optional[float] = Field(None, ge=1.0, le=60.0, description="Historical avg duration in min")
     completed_today: Optional[int] = Field(0, ge=0, description="Number of completed patients today for doctor")
+    department_name: Optional[str] = Field(None, description="Department clinical specialty name for cold-start prior")
+    dept_avg_duration: Optional[float] = Field(None, description="Specialty baseline duration in minutes")
+    is_cold_start: Optional[bool] = Field(False, description="Flag indicating new department/doctor with <3 consultations")
 
 class PredictionResponse(BaseModel):
     predicted_wait_minutes: float = Field(..., description="Estimated wait time in minutes")
@@ -23,6 +26,8 @@ class PredictionResponse(BaseModel):
     upper_bound_minutes: int = Field(..., description="Upper bound of estimated wait interval")
     model_version: str = Field(..., description="Model version used for prediction")
     confidence_interval: str = Field("80% empirical interval", description="Interval description")
+    is_cold_start: Optional[bool] = Field(False, description="Whether clinical specialty prior was utilized for cold start")
+    message: Optional[str] = Field(None, description="Clinical description of estimation method")
 
 class ModelInfoResponse(BaseModel):
     model_name: str

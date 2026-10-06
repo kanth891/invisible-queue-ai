@@ -19,29 +19,34 @@ const TIMEOUT_MS = 2500;
  */
 function calculateFallback(features) {
   const ahead = Math.max(0, Number(features.patients_ahead) || 0);
+  const isColdStart = Boolean(features.is_cold_start);
   
   if (ahead === 0) {
     return {
       predicted_wait_minutes: 2.0,
       lower_bound_minutes: 1,
       upper_bound_minutes: 4,
-      model_version: 'v1.0-baseline-fallback',
+      model_version: isColdStart ? 'v1.0-bayesian-prior' : 'v1.0-baseline-fallback',
       confidence_interval: 'Immediate queue (Next in line)',
+      is_cold_start: isColdStart,
       is_fallback: true,
     };
   }
 
   const avgDuration = Number(features.doctor_avg_duration) || 12.0;
   const predicted = Math.round((ahead * avgDuration + 1.0) * 10) / 10;
-  const lowerBound = Math.max(1, Math.floor(predicted * 0.80));
-  const upperBound = Math.max(lowerBound + 2, Math.ceil(predicted * 1.20));
+  const lowerBound = Math.max(1, Math.floor(predicted * (isColdStart ? 0.65 : 0.80)));
+  const upperBound = Math.max(lowerBound + 2, Math.ceil(predicted * (isColdStart ? 1.35 : 1.20)));
 
   return {
     predicted_wait_minutes: predicted,
     lower_bound_minutes: lowerBound,
     upper_bound_minutes: upperBound,
-    model_version: 'v1.0-baseline-fallback',
-    confidence_interval: 'Estimated wait based on historical queue flow',
+    model_version: isColdStart ? 'v1.0-bayesian-prior' : 'v1.0-baseline-fallback',
+    confidence_interval: isColdStart
+      ? 'Clinical specialty prior calibration (±35%)'
+      : 'Estimated wait based on historical queue flow',
+    is_cold_start: isColdStart,
     is_fallback: true,
   };
 }

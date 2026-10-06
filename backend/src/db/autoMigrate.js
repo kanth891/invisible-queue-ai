@@ -93,6 +93,7 @@ export async function autoMigrate() {
       );
       CREATE INDEX IF NOT EXISTS idx_predictions_queue_entry ON predictions(queue_entry_id);
       CREATE INDEX IF NOT EXISTS idx_predictions_created_at ON predictions(created_at);
+      ALTER TABLE predictions ADD COLUMN IF NOT EXISTS is_cold_start BOOLEAN DEFAULT FALSE;
 
       -- Phase 4 Real-Time Intelligent Queue Columns & Notification Tracking
       ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS actual_wait_minutes NUMERIC(5, 1);

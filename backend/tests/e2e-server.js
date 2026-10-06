@@ -168,6 +168,11 @@ async function computePredictionE2E(entry, activeEntries) {
   }
 
   const patientsAhead = patientIndex;
+  const dept = db.departments.find(d => d.id === entry.department_id);
+  const deptName = dept ? dept.name : '';
+  const docCompleted = db.queue_entries.filter(q => q.doctor_id === entry.doctor_id && q.status === 'COMPLETED').length;
+  const isColdStart = docCompleted < 3;
+
   try {
     const res = await fetch('http://127.0.0.1:8000/predict', {
       method: 'POST',
@@ -182,7 +187,9 @@ async function computePredictionE2E(entry, activeEntries) {
         department_id: entry.department_id,
         doctor_id: entry.doctor_id,
         doctor_avg_duration: 12.0,
-        completed_today: db.queue_entries.filter(q => q.doctor_id === entry.doctor_id && q.status === 'COMPLETED').length,
+        completed_today: docCompleted,
+        department_name: deptName,
+        is_cold_start: isColdStart,
       }),
     });
     if (res.ok) {
@@ -202,9 +209,11 @@ async function computePredictionE2E(entry, activeEntries) {
     predicted_wait_minutes: predictedWait,
     lower_bound_minutes: Math.max(1, Math.round(predictedWait * 0.8)),
     upper_bound_minutes: Math.round(predictedWait * 1.3),
-    model_version: 'v1.0-fallback',
+    model_version: isColdStart ? 'v1.0-bayesian-prior' : 'v1.0-fallback',
+    confidence_interval: isColdStart ? 'Clinical specialty prior calibration (±35%)' : 'Estimated wait based on queue flow',
+    is_cold_start: isColdStart,
     is_fallback: true,
-    message: 'Estimated wait based on queue flow',
+    message: isColdStart ? 'Wait estimated using clinical specialty prior' : 'Estimated wait based on queue flow',
   };
 }
 

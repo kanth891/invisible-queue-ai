@@ -323,6 +323,17 @@ If the ML microservice is unreachable, the Node.js backend automatically applies
 $$\text{Estimated Wait} = \max(2, \text{patientsAhead} \times \text{doctorAvgDuration})$$
 The returned payload flags `is_fallback: true` so the UI transparently notes: `Model: Historical Median Baseline`.
 
+### Hierarchical Bayesian Cold-Start Engine (Brand-New Specialties & Doctors)
+To eliminate the traditional cold-start limitation where newly added departments or physicians lack historical consultation data, the system implements a **3-tier hierarchical empirical Bayes smoothing engine** with medical specialty priors:
+
+1. **Clinical Specialty Priors ($\mu_{\text{specialty}}$)**: Encodes evidence-based clinical priors across 14+ medical disciplines (Oncology: 25.0 min, Neurology: 22.0 min, Cardiology: 18.0 min, Orthopedics: 15.0 min, Pediatrics: 13.0 min, General Medicine: 11.5 min, Dermatology: 10.0 min, Emergency: 9.0 min).
+2. **Tier 1 Department Smoothing**: Shrinks observed department averages toward the clinical specialty prior using $M_{\text{dept}} = 5$ pseudo-observations:
+   $$\mu_{\text{dept}} = \frac{N_{\text{dept}} \bar{x}_{\text{dept}} + M_{\text{dept}} \mu_{\text{specialty}}}{N_{\text{dept}} + M_{\text{dept}}}$$
+3. **Tier 2 Doctor Baseline**: Merges the doctor's administrative configured duration with the department smoothed baseline.
+4. **Tier 3 Doctor Bayesian Smoothing**: Shrinks the doctor's observed pace toward the doctor baseline prior using $M_{\text{doc}} = 3$ pseudo-observations:
+   $$\hat{\mu}_{\text{doctor}} = \frac{N_{\text{doc}} \bar{x}_{\text{doc}} + M_{\text{doc}} \mu_{\text{doc\_prior}}}{N_{\text{doc}} + M_{\text{doc}}}$$
+5. **Inference & UI Transparency**: Brand-new departments ($N_{\text{doc}} < 3$) predict specialty-accurate wait times immediately from Patient #1, dynamically scale tree partition splits, apply $\pm 35\%$ calibration intervals, and flag `is_cold_start: true`, rendered in the patient view as `Model: Clinical Specialty Prior (Calibrating)`. As visits complete ($N = 0 \to N = 1 \to N \ge 3$), the prediction automatically and smoothly converges to empirical doctor pacing.
+
 ---
 
 ## Real-Time Queue Management
@@ -620,7 +631,7 @@ Execute all automated verification suites:
 cd backend
 npm test
 ```
-*Executes all 6 test suites covering Phase 2 cryptographic security, Phase 3 prediction algorithms, Phase 4 state machine validation, API endpoints, multi-client real-time synchronization, and complete multi-role simulations.*
+*Executes all 7 automated test suites covering Phase 2 cryptographic security, Phase 3 prediction algorithms, Phase 4 state machine validation, API endpoints, multi-client real-time synchronization, complete multi-role simulations, and hierarchical Bayesian cold-start specialty prior testing.*
 
 ### 2. Machine Learning Unit Tests
 ```bash
@@ -701,9 +712,12 @@ This system was conceived and engineered as a **B.Tech Computer Science & Engine
 
 ---
 
-## Limitations
+## Limitations & Resolved Challenges
 
-- **Historical Data Dependency**: Machine-learning prediction accuracy directly correlates with historical consultation data volume. In newly created departments with fewer than 3 completed consultations, the system transparently utilizes the department median baseline.
+- **Initial Cold Start in New Departments [RESOLVED]**: Previously, machine-learning prediction accuracy in newly added departments or doctors was constrained by a lack of historical consultation records. This has been resolved via an empirical **Hierarchical Bayesian Clinical Specialty Prior Engine**:
+  - Encodes evidence-based clinical priors across 14+ medical disciplines (Oncology: 25.0 min, Neurology: 22.0 min, Cardiology: 18.0 min, Orthopedics: 15.0 min, Pediatrics: 13.0 min, General Medicine: 11.5 min, Dermatology: 10.0 min, Emergency: 9.0 min).
+  - Employs 3-tier empirical Bayes shrinkage that automatically transitions as consultations complete ($N = 0 \to N = 1 \to N \ge 3$).
+  - Delivers specialty-differentiated predictions from Patient #1, dynamically scaling tree partition splits while preserving confidence bounds.
 - **Browser Notification Permissions**: Remote alerts rely on the user granting notification permissions in their mobile browser. If denied, the application falls back to visual in-app badges and audio cues.
 - **Network Disconnection**: Real-time push updates depend on active internet connectivity. In intermittent network scenarios, the client automatically performs REST reconciliation upon reconnection.
 

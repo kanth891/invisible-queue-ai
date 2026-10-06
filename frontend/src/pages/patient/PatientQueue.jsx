@@ -608,7 +608,13 @@ export default function PatientQueue() {
                     border: '1px solid #CCFBF1'
                   }}
                 >
-                  <span>Model: {data.prediction.is_fallback ? 'Historical Median Baseline' : 'AI Gradient Boosting v1.0'}</span>
+                  <span>
+                    Model: {data.prediction.is_cold_start
+                      ? 'Clinical Specialty Prior (Calibrating)'
+                      : data.prediction.is_fallback
+                        ? 'Historical Median Baseline'
+                        : 'AI Gradient Boosting v1.0'}
+                  </span>
                 </div>
               </div>
             ) : (
