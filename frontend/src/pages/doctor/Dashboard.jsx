@@ -22,7 +22,7 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     fetchQueue();
-    const t = setInterval(fetchQueue, 10000);
+    const t = setInterval(fetchQueue, 8000);
     return () => clearInterval(t);
   }, [user.doctorInfo?.doctor_id]);
 
@@ -44,85 +44,191 @@ export default function DoctorDashboard() {
     await handleAction(nextWaiting.id, 'call');
   };
 
-  if (loading) return <div className="spinner" />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
+        <div className="spinner" />
+        <span style={{ marginLeft: '0.75rem', color: '#64748B' }}>Loading Consultation Room...</span>
+      </div>
+    );
+  }
 
   const currentPatient = queue.find(q => ['CALLED', 'IN_CONSULTATION'].includes(q.status));
   const waitingPatients = queue.filter(q => q.status === 'WAITING');
   const completedPatients = queue.filter(q => ['COMPLETED', 'NO_SHOW', 'CANCELLED'].includes(q.status));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.75rem' }}>
       
-      {/* Current Patient & Queue */}
+      {/* ── Main Area: Active Consultation & Waiting Queue ── */}
       <div>
-        <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
-          Welcome, {user.name} <span style={{fontSize: '1rem', color: 'var(--text-muted)'}}>({user.doctorInfo?.department_name})</span>
-        </h2>
+        <div style={{ marginBottom: '1.25rem' }}>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
+            Welcome, Dr. {user.name}
+          </h1>
+          <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
+            {user.doctorInfo?.department_name || 'Consultation Room'} • Live Patient Queue
+          </p>
+        </div>
 
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '2rem', marginBottom: '2rem', background: currentPatient ? 'var(--gradient-primary)' : 'var(--bg-card)' }}>
-          <h3 style={{ marginBottom: '1rem', color: currentPatient ? 'white' : 'var(--text-secondary)' }}>Current Patient</h3>
+        {/* Current Patient Card */}
+        <div
+          className="card"
+          style={{
+            padding: '1.75rem',
+            marginBottom: '1.75rem',
+            background: currentPatient ? '#F0FDFA' : '#FFFFFF',
+            borderColor: currentPatient ? '#99F6E4' : '#E2E8F0'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <span style={{ fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: currentPatient ? '#0F766E' : '#64748B' }}>
+              Current Consultation
+            </span>
+            {currentPatient && (
+              <span
+                style={{
+                  background: currentPatient.status === 'CALLED' ? '#EFF6FF' : '#CCFBF1',
+                  color: currentPatient.status === 'CALLED' ? '#1D4ED8' : '#0F766E',
+                  border: `1px solid ${currentPatient.status === 'CALLED' ? '#BFDBFE' : '#99F6E4'}`,
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '100px',
+                  fontSize: '0.75rem',
+                  fontWeight: '700'
+                }}
+              >
+                {currentPatient.status === 'CALLED' ? '● CALLED (Waiting Entry)' : '● IN CONSULTATION'}
+              </span>
+            )}
+          </div>
           
           {currentPatient ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
               <div>
-                <div style={{ fontSize: '3rem', fontWeight: '800', lineHeight: 1 }}>{currentPatient.token_number}</div>
-                <div style={{ fontSize: '1.25rem', marginTop: '0.5rem', fontWeight: '500' }}>{currentPatient.patient_name}</div>
-                <div style={{ opacity: 0.8, fontSize: '0.9rem', marginTop: '0.25rem' }}>Age: {currentPatient.patient_age} | {currentPatient.patient_gender}</div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '200px' }}>
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                  Status: {currentPatient.status.replace('_', ' ')}
+                <div style={{ fontSize: '3.25rem', fontWeight: '900', color: '#0F766E', lineHeight: 1 }}>
+                  {currentPatient.token_number}
                 </div>
-                
+                <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#1E293B', marginTop: '0.4rem' }}>
+                  {currentPatient.patient_name}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
+                  Age: {currentPatient.patient_age} yrs • Gender: {currentPatient.patient_gender}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', minWidth: '220px' }}>
                 {currentPatient.status === 'CALLED' && (
-                  <button onClick={() => handleAction(currentPatient.id, 'start')} disabled={actionLoading} style={btnStyle('var(--accent-emerald)')}>
+                  <button
+                    onClick={() => handleAction(currentPatient.id, 'start')}
+                    disabled={actionLoading}
+                    className="btn-primary"
+                    style={{ padding: '0.75rem', fontSize: '0.9rem' }}
+                  >
                     Start Consultation
                   </button>
                 )}
+
                 {currentPatient.status === 'IN_CONSULTATION' && (
-                  <button onClick={() => handleAction(currentPatient.id, 'complete')} disabled={actionLoading} style={btnStyle('var(--accent-cyan)')}>
-                    Complete Consultation
+                  <button
+                    onClick={() => handleAction(currentPatient.id, 'complete')}
+                    disabled={actionLoading}
+                    style={{
+                      background: '#10B981',
+                      color: '#FFFFFF',
+                      border: '1px solid #10B981',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    ✓ Complete Consultation
                   </button>
                 )}
-                <button onClick={() => handleAction(currentPatient.id, 'noShow')} disabled={actionLoading} style={btnStyle('rgba(255,255,255,0.2)')}>
-                  Mark No-Show
+
+                <button
+                  onClick={() => handleAction(currentPatient.id, 'noShow')}
+                  disabled={actionLoading}
+                  className="btn-secondary"
+                  style={{ padding: '0.65rem', fontSize: '0.85rem' }}
+                >
+                  Mark as No-Show
                 </button>
               </div>
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--text-muted)' }}>
-              No active consultation.
-              <div style={{ marginTop: '1rem' }}>
-                <button onClick={handleCallNext} disabled={actionLoading || waitingPatients.length === 0} style={{ padding: '1rem 2rem', fontSize: '1.1rem', background: 'var(--accent-indigo)', color: 'white', border: 'none', borderRadius: '8px', cursor: waitingPatients.length > 0 ? 'pointer' : 'not-allowed', opacity: waitingPatients.length > 0 ? 1 : 0.5, fontWeight: 'bold' }}>
-                  Call Next Patient
-                </button>
+            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🩺</div>
+              <div style={{ fontSize: '1rem', fontWeight: '600', color: '#1E293B', marginBottom: '0.25rem' }}>
+                No Active Patient in Room
               </div>
+              <div style={{ fontSize: '0.85rem', color: '#64748B', marginBottom: '1.25rem' }}>
+                {waitingPatients.length > 0
+                  ? `${waitingPatients.length} patient(s) waiting in your virtual queue.`
+                  : 'Your queue is currently clear.'}
+              </div>
+              <button
+                onClick={handleCallNext}
+                disabled={actionLoading || waitingPatients.length === 0}
+                className="btn-primary"
+                style={{
+                  padding: '0.75rem 1.75rem',
+                  fontSize: '0.95rem',
+                  opacity: waitingPatients.length > 0 ? 1 : 0.5
+                }}
+              >
+                Call Next Patient ({waitingPatients[0]?.token_number || 'None'})
+              </button>
             </div>
           )}
         </div>
 
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Waiting Queue ({waitingPatients.length})</h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+        {/* Waiting Queue List */}
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
+              Waiting Queue ({waitingPatients.length})
+            </h2>
+            <span style={{ fontSize: '0.78rem', color: '#64748B' }}>
+              Virtual alerts notify patients as they approach
+            </span>
+          </div>
+
+          <div className="table-container">
+            <table className="modern-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                  <th style={{ padding: '0.75rem' }}>Token</th>
-                  <th style={{ padding: '0.75rem' }}>Patient</th>
-                  <th style={{ padding: '0.75rem' }}>Wait Time (Est.)</th>
+                <tr>
+                  <th>Token</th>
+                  <th>Patient Details</th>
+                  <th>Status</th>
+                  <th>Estimated Wait</th>
                 </tr>
               </thead>
               <tbody>
                 {waitingPatients.map(q => (
-                  <tr key={q.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{q.token_number}</td>
-                    <td style={{ padding: '0.75rem' }}>{q.patient_name} ({q.patient_age}{q.patient_gender[0]})</td>
-                    <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Phase 3 Feature</td>
+                  <tr key={q.id}>
+                    <td style={{ fontWeight: '800', color: '#0F766E' }}>{q.token_number}</td>
+                    <td>
+                      <div style={{ fontWeight: '600', color: '#1E293B' }}>{q.patient_name}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{q.patient_age} yrs • {q.patient_gender}</div>
+                    </td>
+                    <td>
+                      <span className="badge badge-waiting">
+                        Waiting in Queue
+                      </span>
+                    </td>
+                    <td style={{ color: '#64748B', fontSize: '0.82rem' }}>
+                      Prediction (Phase 3)
+                    </td>
                   </tr>
                 ))}
                 {waitingPatients.length === 0 && (
                   <tr>
-                    <td colSpan="3" style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>No more patients waiting.</td>
+                    <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: '#64748B' }}>
+                      No patients currently waiting in this room.
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -131,23 +237,39 @@ export default function DoctorDashboard() {
         </div>
       </div>
 
-      {/* Sidebar Stats */}
+      {/* ── Sidebar: Today's Overview Metrics ── */}
       <div>
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-secondary)' }}>Today's Overview</h3>
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: '700', color: '#1E293B', marginBottom: '1.25rem' }}>
+            Today's Room Summary
+          </h2>
           
-          <div style={{ display: 'grid', gap: '1rem' }}>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Waiting</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-amber)' }}>{waitingPatients.length}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '1rem', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#92400E', textTransform: 'uppercase' }}>
+                Waiting Patients
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#B45309', marginTop: '0.2rem' }}>
+                {waitingPatients.length}
+              </div>
             </div>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Completed</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent-emerald)' }}>{completedPatients.filter(p => p.status === 'COMPLETED').length}</div>
+
+            <div style={{ background: '#D1FAE5', border: '1px solid #A7F3D0', padding: '1rem', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#065F46', textTransform: 'uppercase' }}>
+                Completed Consultations
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#047857', marginTop: '0.2rem' }}>
+                {completedPatients.filter(p => p.status === 'COMPLETED').length}
+              </div>
             </div>
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No Shows / Cancelled</div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{completedPatients.filter(p => p.status !== 'COMPLETED').length}</div>
+
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '1rem', borderRadius: '10px' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>
+                No-Shows / Cancelled
+              </div>
+              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#475569', marginTop: '0.2rem' }}>
+                {completedPatients.filter(p => p.status !== 'COMPLETED').length}
+              </div>
             </div>
           </div>
         </div>
@@ -156,15 +278,3 @@ export default function DoctorDashboard() {
     </div>
   );
 }
-
-const btnStyle = (bg) => ({
-  background: bg,
-  color: 'white',
-  border: 'none',
-  padding: '0.75rem',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  width: '100%',
-  textAlign: 'center'
-});

@@ -11,6 +11,12 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const handleDemoFill = (demoEmail, demoPassword) => {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -31,77 +37,173 @@ export default function Login() {
         }
       }
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please verify credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="app flex items-center justify-center min-h-screen">
-      <div className="status-card" style={{ maxWidth: '400px', width: '100%', flexDirection: 'column', alignItems: 'stretch' }}>
+    <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1.5rem' }}>
+      <div
+        className="card"
+        style={{
+          maxWidth: '420px',
+          width: '100%',
+          padding: '2.25rem 2rem',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03)'
+        }}
+      >
+        {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div className="header__icon" style={{ margin: '0 auto 1rem' }}>🏥</div>
-          <h2 className="header__title">Invisible Queue AI</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-            Hospital Queue Foundation (Phase 1)
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'var(--primary-teal, #0D9488)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem',
+              margin: '0 auto 1rem',
+              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.25)'
+            }}
+          >
+            🏥
+          </div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-primary, #1E293B)', marginBottom: '0.35rem' }}>
+            Invisible Queue AI
+          </h1>
+          <p style={{ color: 'var(--text-secondary, #64748B)', fontSize: '0.88rem' }}>
+            Smart Hospital Queue Management System
           </p>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div style={{ background: 'rgba(251, 113, 133, 0.1)', color: 'var(--accent-rose)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.9rem', border: '1px solid rgba(251, 113, 133, 0.2)' }}>
-            {error}
+          <div
+            style={{
+              background: '#FEE2E2',
+              color: '#991B1B',
+              border: '1px solid #FECACA',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              marginBottom: '1.25rem',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Email</label>
-            <input 
-              type="email" 
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.45rem',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: 'var(--text-primary, #1E293B)'
+              }}
+            >
+              Email Address
+            </label>
+            <input
+              type="email"
+              className="input-control"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', color: 'white' }}
-              placeholder="admin@hospital.com"
+              placeholder="e.g. receptionist1@hospital.com"
             />
           </div>
+
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Password</label>
-            <input 
-              type="password" 
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '0.45rem',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                color: 'var(--text-primary, #1E293B)'
+              }}
+            >
+              Password
+            </label>
+            <input
+              type="password"
+              className="input-control"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', color: 'white' }}
               placeholder="••••••••"
             />
           </div>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             disabled={loading}
-            style={{ 
-              marginTop: '1rem',
-              padding: '0.75rem', 
-              background: 'var(--gradient-primary)', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: 'var(--radius-sm)',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
+            className="btn-primary"
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              marginTop: '0.5rem',
+              fontSize: '0.95rem'
             }}
           >
-            {loading ? <><span className="spinner" style={{ width: '12px', height: '12px' }}/> Authenticating...</> : 'Login'}
+            {loading ? (
+              <>
+                <span className="spinner" style={{ width: '16px', height: '16px', borderTopColor: '#FFFFFF' }} />
+                Signing In...
+              </>
+            ) : (
+              'Sign In to Dashboard'
+            )}
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-          <p>Demo Accounts:</p>
-          <p>admin@hospital.com / admin123</p>
-          <p>receptionist1@hospital.com / recep123</p>
-          <p>dr.ravi@hospital.com / doctor123</p>
+        {/* Quick Demo Credentials */}
+        <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle, #E2E8F0)', paddingTop: '1.25rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary, #64748B)', textAlign: 'center', marginBottom: '0.75rem' }}>
+            Quick Demo Logins (Click to Autofill)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={() => handleDemoFill('receptionist1@hospital.com', 'recep123')}
+              className="btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+            >
+              <span>👩‍💼 Receptionist</span>
+              <span style={{ color: 'var(--text-muted)' }}>receptionist1@hospital.com</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDemoFill('dr.ravi@hospital.com', 'doctor123')}
+              className="btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+            >
+              <span>👨‍⚕️ Doctor (General Medicine)</span>
+              <span style={{ color: 'var(--text-muted)' }}>dr.ravi@hospital.com</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDemoFill('admin@hospital.com', 'admin123')}
+              className="btn-secondary"
+              style={{ fontSize: '0.78rem', padding: '0.45rem 0.75rem', justifyContent: 'space-between' }}
+            >
+              <span>⚙️ Administrator</span>
+              <span style={{ color: 'var(--text-muted)' }}>admin@hospital.com</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

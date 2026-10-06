@@ -22,7 +22,7 @@ export default function AdminDashboard() {
       setDoctors(docRes.data);
       setUsers(usersRes.data);
     } catch (err) {
-      console.error(err);
+      console.error('Admin fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -32,130 +32,214 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  if (loading) return <div className="spinner" />;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
+        <div className="spinner" />
+        <span style={{ marginLeft: '0.75rem', color: '#64748B' }}>Loading Administrative Console...</span>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <h2 style={{ marginBottom: '1.5rem' }}>Admin Dashboard</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
+            Hospital Administration
+          </h1>
+          <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
+            System Overview, Departments, Doctors & User Accounts
+          </p>
+        </div>
+
+        <button
+          onClick={fetchData}
+          className="btn-secondary"
+          style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}
+        >
+          ↻ Refresh Data
+        </button>
+      </div>
       
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '1rem' }}>
-        <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>Overview</Tab>
-        <Tab active={activeTab === 'departments'} onClick={() => setActiveTab('departments')}>Departments</Tab>
-        <Tab active={activeTab === 'doctors'} onClick={() => setActiveTab('doctors')}>Doctors</Tab>
-        <Tab active={activeTab === 'users'} onClick={() => setActiveTab('users')}>Users</Tab>
+      {/* Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.75rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
+        <Tab active={activeTab === 'overview'} onClick={() => setActiveTab('overview')}>
+          📊 Overview
+        </Tab>
+        <Tab active={activeTab === 'departments'} onClick={() => setActiveTab('departments')}>
+          🏢 Departments ({departments.length})
+        </Tab>
+        <Tab active={activeTab === 'doctors'} onClick={() => setActiveTab('doctors')}>
+          👨‍⚕️ Doctors ({doctors.length})
+        </Tab>
+        <Tab active={activeTab === 'users'} onClick={() => setActiveTab('users')}>
+          👥 System Users ({users.length})
+        </Tab>
       </div>
 
+      {/* ── Tab 1: Overview ── */}
       {activeTab === 'overview' && stats && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ margin: 0, color: 'var(--text-secondary)' }}>Today's Statistics</h3>
-            <span style={{
-              background: 'rgba(99, 102, 241, 0.15)',
-              color: 'var(--accent-indigo)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              padding: '0.25rem 0.75rem',
-              borderRadius: '100px',
-              fontSize: '0.75rem',
-              fontWeight: '700'
-            }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
+              Hospital Queue Metrics (Today)
+            </h2>
+            <span
+              style={{
+                background: '#CCFBF1',
+                color: '#0F766E',
+                border: '1px solid #99F6E4',
+                padding: '0.25rem 0.75rem',
+                borderRadius: '100px',
+                fontSize: '0.75rem',
+                fontWeight: '700'
+              }}
+            >
               ⚡ Phase 2 Virtual Queue Active
             </span>
           </div>
 
           <div className="status-grid" style={{ marginBottom: '2rem' }}>
-            <StatCard label="Total Patients" value={stats.total_patients} color="var(--text-primary)" />
-            <StatCard label="Active Virtual Queues" value={stats.active_virtual_queues ?? 0} color="var(--accent-violet)" />
-            <StatCard label="Patients Currently Waiting" value={stats.waiting} color="var(--accent-amber)" />
-            <StatCard label="Patients Currently Consulting" value={stats.in_consultation} color="var(--accent-cyan)" />
-            <StatCard label="Patients Completed" value={stats.completed} color="var(--accent-emerald)" />
-            <StatCard label="Active Doctors" value={stats.total_doctors} color="var(--accent-indigo)" />
+            <StatCard label="Total Registered Patients" value={stats.total_patients} color="#1E293B" />
+            <StatCard label="Active Virtual Queues" value={stats.active_virtual_queues ?? 0} color="#0D9488" />
+            <StatCard label="Patients Waiting" value={stats.waiting} color="#F59E0B" />
+            <StatCard label="Patients Consulting" value={stats.in_consultation} color="#0D9488" />
+            <StatCard label="Consultations Completed" value={stats.completed} color="#10B981" />
+            <StatCard label="Active Medical Staff" value={stats.total_doctors} color="#0284C7" />
           </div>
         </div>
       )}
 
+      {/* ── Tab 2: Departments ── */}
       {activeTab === 'departments' && (
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3>Departments</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Management endpoints exist in API. UI creation omitted for brevity.</span>
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
+              Hospital Departments
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: '#64748B' }}>
+              Departments configured in system database
+            </span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '0.75rem' }}>Code</th>
-                <th style={{ padding: '0.75rem' }}>Name</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {departments.map(d => (
-                <tr key={d.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{d.code}</td>
-                  <td style={{ padding: '0.75rem' }}>{d.name}</td>
-                  <td style={{ padding: '0.75rem' }}>{d.status}</td>
+          <div className="table-container">
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Department Name</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {departments.map(d => (
+                  <tr key={d.id}>
+                    <td style={{ fontWeight: '700', color: '#0F766E' }}>{d.code}</td>
+                    <td style={{ fontWeight: '600' }}>{d.name}</td>
+                    <td>
+                      <span className="badge badge-completed">
+                        {d.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
+      {/* ── Tab 3: Doctors ── */}
       {activeTab === 'doctors' && (
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3>Doctors</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Management endpoints exist in API. UI creation omitted for brevity.</span>
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
+              Doctor Directory
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: '#64748B' }}>
+              Medical staff registered for virtual queuing
+            </span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '0.75rem' }}>Name</th>
-                <th style={{ padding: '0.75rem' }}>Department</th>
-                <th style={{ padding: '0.75rem' }}>Specialization</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doctors.map(d => (
-                <tr key={d.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{d.name}</td>
-                  <td style={{ padding: '0.75rem' }}>{d.department_name} ({d.department_code})</td>
-                  <td style={{ padding: '0.75rem' }}>{d.specialization}</td>
-                  <td style={{ padding: '0.75rem' }}>{d.status}</td>
+          <div className="table-container">
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th>Doctor Name</th>
+                  <th>Department</th>
+                  <th>Specialization</th>
+                  <th>Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {doctors.map(d => (
+                  <tr key={d.id}>
+                    <td style={{ fontWeight: '700', color: '#1E293B' }}>{d.name}</td>
+                    <td style={{ color: '#0F766E', fontWeight: '500' }}>{d.department_name} ({d.department_code})</td>
+                    <td style={{ color: '#64748B' }}>{d.specialization}</td>
+                    <td>
+                      <span className="badge badge-completed">
+                        {d.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
+      {/* ── Tab 4: System Users ── */}
       {activeTab === 'users' && (
-        <div className="status-card" style={{ flexDirection: 'column', alignItems: 'stretch', padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3>System Users</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Management endpoints exist in API. UI creation omitted for brevity.</span>
+        <div className="card" style={{ padding: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
+              Authorized System Users
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: '#64748B' }}>
+              Staff credentials and role access
+            </span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                <th style={{ padding: '0.75rem' }}>Name</th>
-                <th style={{ padding: '0.75rem' }}>Email</th>
-                <th style={{ padding: '0.75rem' }}>Role</th>
-                <th style={{ padding: '0.75rem' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>{u.name}</td>
-                  <td style={{ padding: '0.75rem' }}>{u.email}</td>
-                  <td style={{ padding: '0.75rem' }}>{u.role}</td>
-                  <td style={{ padding: '0.75rem' }}>{u.status}</td>
+          <div className="table-container">
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Account Status</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: '700', color: '#1E293B' }}>{u.name}</td>
+                    <td style={{ color: '#64748B' }}>{u.email}</td>
+                    <td>
+                      <span
+                        style={{
+                          background: u.role === 'ADMIN' ? '#EFF6FF' : u.role === 'DOCTOR' ? '#CCFBF1' : '#F1F5F9',
+                          color: u.role === 'ADMIN' ? '#1D4ED8' : u.role === 'DOCTOR' ? '#0F766E' : '#334155',
+                          border: `1px solid ${u.role === 'ADMIN' ? '#BFDBFE' : u.role === 'DOCTOR' ? '#99F6E4' : '#E2E8F0'}`,
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: '700'
+                        }}
+                      >
+                        {u.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge badge-completed">
+                        {u.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -165,16 +249,20 @@ export default function AdminDashboard() {
 
 function Tab({ active, onClick, children }) {
   return (
-    <button onClick={onClick} style={{
-      background: active ? 'var(--gradient-primary)' : 'transparent',
-      color: active ? 'white' : 'var(--text-secondary)',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '20px',
-      cursor: 'pointer',
-      fontWeight: active ? '600' : '400',
-      transition: 'all 0.2s ease'
-    }}>
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? '#CCFBF1' : '#FFFFFF',
+        color: active ? '#0F766E' : '#64748B',
+        border: `1px solid ${active ? '#99F6E4' : '#E2E8F0'}`,
+        padding: '0.5rem 1rem',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: active ? '700' : '500',
+        fontSize: '0.85rem',
+        transition: 'all 0.15s ease'
+      }}
+    >
       {children}
     </button>
   );
@@ -182,9 +270,13 @@ function Tab({ active, onClick, children }) {
 
 function StatCard({ label, value, color }) {
   return (
-    <div className="status-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{label}</div>
-      <div style={{ fontSize: '2rem', fontWeight: '800', color }}>{value}</div>
+    <div className="card" style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+      <div style={{ fontSize: '0.78rem', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: '2rem', fontWeight: '800', color, lineHeight: 1.15 }}>
+        {value}
+      </div>
     </div>
   );
 }
