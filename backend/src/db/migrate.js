@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS queue_entries (
   doctor_id                 INTEGER NOT NULL REFERENCES doctors(id) ON DELETE RESTRICT,
   department_id             INTEGER NOT NULL REFERENCES departments(id) ON DELETE RESTRICT,
   token_number              VARCHAR(20)  NOT NULL,
+  queue_access_token        VARCHAR(64)  UNIQUE,
+  queue_access_created_at   TIMESTAMPTZ  DEFAULT NOW(),
   queue_date                DATE         NOT NULL DEFAULT CURRENT_DATE,
   status                    VARCHAR(20)  NOT NULL DEFAULT 'WAITING'
                             CHECK (status IN ('WAITING','CALLED','IN_CONSULTATION','COMPLETED','CANCELLED','NO_SHOW')),
@@ -77,11 +79,21 @@ CREATE TABLE IF NOT EXISTS queue_entries (
   consultation_completed_at TIMESTAMPTZ
 );
 
+-- ── Phase 2: Virtual Queue Migration Alterations ───
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_token VARCHAR(64) UNIQUE;
+ALTER TABLE queue_entries ADD COLUMN IF NOT EXISTS queue_access_created_at TIMESTAMPTZ DEFAULT NOW();
+
+-- Backfill any existing queue entries without an access token
+UPDATE queue_entries
+SET queue_access_token = md5(random()::text || clock_timestamp()::text || id::text)
+WHERE queue_access_token IS NULL;
+
 -- ── Indexes ────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_queue_entries_doctor_date    ON queue_entries(doctor_id, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_department_date ON queue_entries(department_id, queue_date);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_status         ON queue_entries(status);
 CREATE INDEX IF NOT EXISTS idx_queue_entries_token          ON queue_entries(token_number, queue_date);
+CREATE INDEX IF NOT EXISTS idx_queue_entries_access_token   ON queue_entries(queue_access_token);
 CREATE INDEX IF NOT EXISTS idx_doctors_department           ON doctors(department_id);
 CREATE INDEX IF NOT EXISTS idx_users_email                  ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role                   ON users(role);
@@ -232,10 +244,11 @@ async function seed(client) {
   ];
 
   for (const q of queueData) {
+    const accessToken = 'demo_' + q.token.toLowerCase().replace('-', '_') + '_' + Math.random().toString(36).substring(2, 10);
     await client.query(`
-      INSERT INTO queue_entries (patient_id, doctor_id, department_id, token_number, status, created_at, called_at, consultation_started_at, consultation_completed_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `, [q.pid, q.did, q.depId, q.token, q.status, q.createdAt, q.calledAt, q.startedAt, q.completedAt]);
+      INSERT INTO queue_entries (patient_id, doctor_id, department_id, token_number, queue_access_token, status, created_at, called_at, consultation_started_at, consultation_completed_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `, [q.pid, q.did, q.depId, q.token, accessToken, q.status, q.createdAt, q.calledAt, q.startedAt, q.completedAt]);
   }
 
   console.log('✅ Queue entries seeded');

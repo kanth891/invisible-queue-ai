@@ -13,7 +13,7 @@ import authRoutes from './routes/auth.js';
 import departmentRoutes from './routes/departments.js';
 import doctorRoutes from './routes/doctors.js';
 import patientRoutes from './routes/patients.js';
-import queueRoutes from './routes/queue.js';
+import queueRoutes, { getPatientQueueAccess } from './routes/queue.js';
 import userRoutes from './routes/users.js';
 
 const app = express();
@@ -48,6 +48,9 @@ app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', versio
 
 // ── Public routes ─────────────────────────────────
 app.use('/api/auth', authRoutes);
+
+// Phase 2: Virtual Queue Patient Access (Public tracking by secure random token)
+app.get('/api/queue/access/:accessToken', getPatientQueueAccess);
 
 // ── Protected routes ──────────────────────────────
 app.use('/api/departments', authenticate, departmentRoutes);

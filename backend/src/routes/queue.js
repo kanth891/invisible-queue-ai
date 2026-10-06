@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import pool from '../db/index.js';
 import { authorize } from '../middleware/auth.js';
 
@@ -33,6 +34,103 @@ async function generateToken(client, departmentId, queueDate) {
 
   const seq = parseInt(countResult.rows[0].count) + 1;
   return `${code}-${String(seq).padStart(3, '0')}`;
+}
+
+/**
+ * GET /api/queue/access/:accessToken
+ * Public endpoint: Returns real-time queue position for a patient using their secure unguessable access token.
+ * Does NOT expose sensitive patient data, phone numbers, or internal database IDs.
+ */
+export async function getPatientQueueAccess(req, res) {
+  try {
+    const { accessToken } = req.params;
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Invalid queue access token format' });
+    }
+
+    const entryResult = await pool.query(
+      `SELECT qe.id, qe.token_number, qe.status, qe.doctor_id, qe.department_id, qe.queue_date,
+              u.name as doctor_name, dep.name as department_name
+       FROM queue_entries qe
+       JOIN doctors d ON qe.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.queue_access_token = $1`,
+      [accessToken.trim()]
+    );
+
+    if (entryResult.rows.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Queue entry not found or invalid access token',
+      });
+    }
+
+    const entry = entryResult.rows[0];
+
+    // Query active entries for this doctor on this queue_date
+    // Active statuses are CALLED, IN_CONSULTATION, and WAITING
+    const activeResult = await pool.query(
+      `SELECT id, token_number, status, created_at, called_at, consultation_started_at
+       FROM queue_entries
+       WHERE doctor_id = $1 AND queue_date = $2
+         AND status IN ('IN_CONSULTATION', 'CALLED', 'WAITING')
+       ORDER BY
+         CASE
+           WHEN status = 'IN_CONSULTATION' THEN 1
+           WHEN status = 'CALLED' THEN 2
+           ELSE 3
+         END,
+         created_at ASC`,
+      [entry.doctor_id, entry.queue_date]
+    );
+
+    const activeEntries = activeResult.rows;
+
+    // Currently serving token (first IN_CONSULTATION, or first CALLED)
+    const currentServing = activeEntries.find(e => e.status === 'IN_CONSULTATION') ||
+                           activeEntries.find(e => e.status === 'CALLED') || null;
+    const currentToken = currentServing ? currentServing.token_number : null;
+
+    // Calculate dynamic queue position & patients ahead
+    const patientIndex = activeEntries.findIndex(e => e.id === entry.id);
+
+    let position = null;
+    let patientsAhead = 0;
+
+    if (patientIndex !== -1) {
+      // 1-indexed position in active queue
+      position = patientIndex + 1;
+      patientsAhead = patientIndex;
+    } else {
+      // Patient is not in active queue (COMPLETED, CANCELLED, or NO_SHOW)
+      position = null;
+      patientsAhead = 0;
+    }
+
+    // Configurable approaching threshold (default 2)
+    const approachingThreshold = parseInt(process.env.APPROACHING_THRESHOLD || '2', 10);
+    const isApproaching = entry.status === 'WAITING' && patientsAhead <= approachingThreshold;
+
+    res.json({
+      status: 'ok',
+      data: {
+        token: entry.token_number,
+        doctor: entry.doctor_name,
+        department: entry.department_name,
+        status: entry.status,
+        currentToken,
+        position,
+        patientsAhead,
+        isApproaching,
+        approachingThreshold,
+        queueDate: entry.queue_date,
+      },
+    });
+  } catch (err) {
+    console.error('Patient queue access error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
 }
 
 /**
@@ -92,10 +190,13 @@ router.post('/token', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const tokenNumber = await generateToken(client, department_id, today);
 
+    // Phase 2: Generate cryptographically secure access token for virtual queue access
+    const queueAccessToken = crypto.randomBytes(16).toString('hex');
+
     const result = await client.query(
-      `INSERT INTO queue_entries (patient_id, doctor_id, department_id, token_number, queue_date, status)
-       VALUES ($1, $2, $3, $4, CURRENT_DATE, 'WAITING') RETURNING *`,
-      [patient_id, doctor_id, department_id, tokenNumber]
+      `INSERT INTO queue_entries (patient_id, doctor_id, department_id, token_number, queue_access_token, queue_date, status)
+       VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'WAITING') RETURNING *`,
+      [patient_id, doctor_id, department_id, tokenNumber, queueAccessToken]
     );
 
     await client.query('COMMIT');
@@ -108,6 +209,7 @@ router.post('/token', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
         patient_name: patientCheck.rows[0].name,
         doctor_name: doctorCheck.rows[0].doctor_name,
         department_name: doctorCheck.rows[0].department_name,
+        queue_access_token: queueAccessToken,
       },
     });
   } catch (err) {
@@ -235,6 +337,9 @@ router.get('/department/:departmentId', async (req, res) => {
  * GET /api/queue/stats
  * Get queue statistics for today. Used by admin and receptionist dashboards.
  */
+// Public route on queue router as well
+router.get('/access/:accessToken', getPatientQueueAccess);
+
 router.get('/stats', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -247,7 +352,8 @@ router.get('/stats', async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'IN_CONSULTATION') as in_consultation,
         COUNT(*) FILTER (WHERE status = 'COMPLETED') as completed,
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled,
-        COUNT(*) FILTER (WHERE status = 'NO_SHOW') as no_show
+        COUNT(*) FILTER (WHERE status = 'NO_SHOW') as no_show,
+        COUNT(DISTINCT doctor_id) FILTER (WHERE status IN ('WAITING', 'CALLED', 'IN_CONSULTATION')) as active_virtual_queues
       FROM queue_entries
       WHERE queue_date = $1
     `, [today]);
