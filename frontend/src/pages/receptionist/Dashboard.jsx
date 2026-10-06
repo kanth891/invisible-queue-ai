@@ -114,17 +114,16 @@ export default function ReceptionistDashboard() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Token Slip - ${tokenData.token_number}</title>
+          <title>Outpatient Pass - ${tokenData.token_number}</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; color: #1E293B; }
-            .hospital { font-size: 20px; font-weight: 800; letter-spacing: 0.02em; color: #0F766E; margin-bottom: 2px; }
-            .subtitle { font-size: 11px; color: #64748B; margin-bottom: 16px; letter-spacing: 0.05em; text-transform: uppercase; }
-            .token-box { margin: 16px 0; padding: 14px; border: 2px dashed #0D9488; border-radius: 8px; background: #F0FDFA; }
-            .token-label { font-size: 12px; font-weight: bold; text-transform: uppercase; color: #0F766E; }
-            .token { font-size: 52px; font-weight: 900; letter-spacing: 0.05em; margin: 4px 0; color: #0F766E; }
-            .info { font-size: 13px; text-align: left; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin: 16px 0; line-height: 1.6; }
-            .qr-container { margin: 16px auto; }
-            .instructions { font-size: 12px; color: #475569; margin-top: 14px; line-height: 1.4; border-top: 1px solid #E2E8F0; padding-top: 12px; }
+            .hospital { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: #0F5147; margin-bottom: 2px; }
+            .subtitle { font-size: 11px; color: #64748B; margin-bottom: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
+            .token-box { margin: 16px 0; padding: 14px; border: 1.5px solid #0D9488; border-radius: 8px; background: #F0FDFA; }
+            .token-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #0F766E; letter-spacing: 0.05em; }
+            .token { font-size: 48px; font-weight: 900; letter-spacing: 0.02em; margin: 4px 0; color: #0F5147; }
+            .info { font-size: 12px; text-align: left; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin: 16px 0; line-height: 1.6; }
+            .instructions { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.4; border-top: 1px solid #E2E8F0; padding-top: 12px; }
             .url { font-size: 10px; color: #64748B; margin-top: 8px; word-break: break-all; }
             @media print {
               body { padding: 0; }
@@ -135,21 +134,21 @@ export default function ReceptionistDashboard() {
           <div class="hospital">Invisible Queue AI</div>
           <div class="subtitle">Smart Hospital Virtual Queue System</div>
           <div class="token-box">
-            <div class="token-label">Digital Queue Token</div>
+            <div class="token-label">Outpatient Token</div>
             <div class="token">${tokenData.token_number}</div>
           </div>
           <div class="info">
             <div><strong>Patient:</strong> ${tokenData.patient_name || 'Patient'}</div>
-            <div><strong>Doctor:</strong> ${tokenData.doctor_name || 'Assigned Doctor'}</div>
+            <div><strong>Doctor:</strong> ${tokenData.doctor_name || 'Assigned Physician'}</div>
             <div><strong>Department:</strong> ${tokenData.department_name || 'Department'}</div>
             <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
           </div>
           <div style="margin: 14px auto; text-align: center;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(queueUrl)}" alt="QR Code" width="140" height="140" style="display: inline-block; border: 1px solid #CBD5E1; border-radius: 8px; padding: 6px; background: #fff;" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(queueUrl)}" alt="QR Code" width="130" height="130" style="display: inline-block; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px; background: #fff;" />
           </div>
           <div class="instructions">
-            <strong>Scan the QR code to monitor your queue remotely!</strong><br/>
-            You do NOT need to wait near the consultation room.<br/>
+            <strong>Scan the QR code to track your queue remotely.</strong><br/>
+            You do not need to wait near the consultation room.<br/>
             Return when your turn approaches.
           </div>
           <div class="url">${queueUrl}</div>
@@ -167,7 +166,7 @@ export default function ReceptionistDashboard() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
         <div className="spinner" />
-        <span style={{ marginLeft: '0.75rem', color: '#64748B' }}>Loading Receptionist Portal...</span>
+        <span style={{ marginLeft: '0.75rem', color: '#64748B' }}>Loading Outpatient Queue...</span>
       </div>
     );
   }
@@ -175,53 +174,78 @@ export default function ReceptionistDashboard() {
   const filteredDoctors = doctors.filter(d => d.department_id === parseInt(formData.department_id));
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '1.75rem' }}>
-      
-      {/* ── Left Column: Registration & Statistics ── */}
-      <div>
-        {/* Registration Card */}
-        <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.15rem', fontWeight: '700', marginBottom: '1rem', color: '#1E293B' }}>
-            Register Patient & Token
+    <div>
+      {/* ── Apollo-Style Overview Cards ── */}
+      {stats && (
+        <div className="stat-card-row">
+          <div className="clinical-stat-card">
+            <span className="clinical-stat-card__label">Today's Registered</span>
+            <span className="clinical-stat-card__value">{stats.total_patients}</span>
+          </div>
+          <div className="clinical-stat-card">
+            <span className="clinical-stat-card__label">Waiting in Queue</span>
+            <span className="clinical-stat-card__value" style={{ color: '#D97706' }}>{stats.waiting}</span>
+          </div>
+          <div className="clinical-stat-card">
+            <span className="clinical-stat-card__label">In Consultation</span>
+            <span className="clinical-stat-card__value" style={{ color: '#0D9488' }}>{stats.in_consultation}</span>
+          </div>
+          <div className="clinical-stat-card">
+            <span className="clinical-stat-card__label">Completed Visits</span>
+            <span className="clinical-stat-card__value" style={{ color: '#10B981' }}>{stats.completed}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Two-Column Layout ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        
+        {/* Left Column: Intake Registration */}
+        <div className="card" style={{ padding: '1.35rem' }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
+            Patient Intake & Token
           </h2>
+          <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: '1.25rem' }}>
+            Register outpatient and generate virtual queue pass
+          </p>
           
           {/* Success Banner with QR Code & Remote Queue Link */}
           {message && message.type === 'success' && (
             <div
               style={{
                 background: '#F0FDFA',
-                border: '1px solid #99F6E4',
-                padding: '1.25rem',
-                borderRadius: '12px',
+                border: '1px solid #CCFBF1',
+                padding: '1.15rem',
+                borderRadius: '8px',
                 marginBottom: '1.25rem'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#0F766E', fontWeight: '700', fontSize: '0.9rem' }}>
-                  <CheckCircleIcon size={16} color="#0F766E" />
-                  <span>Token Generated Successfully</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#0F766E', fontWeight: '700', fontSize: '0.85rem' }}>
+                  <CheckCircleIcon size={15} color="#0F766E" />
+                  <span>Token Generated</span>
                 </span>
                 <button
                   onClick={() => setMessage(null)}
                   style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                   title="Dismiss"
                 >
-                  <CloseIcon size={16} color="#64748B" />
+                  <CloseIcon size={14} color="#64748B" />
                 </button>
               </div>
 
               {/* Prominent Token Display */}
-              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748B', fontWeight: '600' }}>
-                  Assigned Token
+              <div style={{ textAlign: 'center', marginBottom: '0.85rem' }}>
+                <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748B', fontWeight: '600' }}>
+                  Outpatient Token
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F766E', lineHeight: 1.15, margin: '0.1rem 0' }}>
+                <div style={{ fontSize: '2.4rem', fontWeight: '900', color: '#0F5147', lineHeight: 1.1, margin: '0.1rem 0' }}>
                   {message.data.token_number}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#1E293B', fontWeight: '500' }}>
+                <div style={{ fontSize: '0.82rem', color: '#1E293B', fontWeight: '600' }}>
                   {message.data.doctor_name}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#0284C7' }}>
+                <div style={{ fontSize: '0.75rem', color: '#0284C7' }}>
                   {message.data.department_name}
                 </div>
               </div>
@@ -232,35 +256,35 @@ export default function ReceptionistDashboard() {
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '10px',
-                    padding: '0.85rem',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    margin: '0.75rem 0'
+                    margin: '0.65rem 0'
                   }}
                 >
                   <QRCodeSVG
                     value={`${window.location.origin}/queue/${message.data.queue_access_token}`}
-                    size={140}
+                    size={130}
                     level="M"
                     includeMargin={false}
                   />
-                  <div style={{ color: '#475569', fontSize: '0.75rem', fontWeight: '600', marginTop: '0.5rem', textAlign: 'center' }}>
-                    Scan with phone for virtual queue
+                  <div style={{ color: '#475569', fontSize: '0.72rem', fontWeight: '500', marginTop: '0.4rem', textAlign: 'center' }}>
+                    Scan with phone camera to track queue
                   </div>
                 </div>
               )}
 
               {/* Action Buttons: Copy Link & Print */}
               {message.data.queue_access_token && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.75rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.65rem' }}>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(`${window.location.origin}/queue/${message.data.queue_access_token}`)}
                       className="btn-secondary"
-                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                      style={{ flex: 1, padding: '0.45rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
                       <CopyIcon size={13} color="currentColor" />
                       <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
@@ -269,10 +293,10 @@ export default function ReceptionistDashboard() {
                       type="button"
                       onClick={() => printTokenSlip(message.data)}
                       className="btn-primary"
-                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                      style={{ flex: 1, padding: '0.45rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                     >
                       <PrinterIcon size={13} color="#FFFFFF" />
-                      <span>Print Slip</span>
+                      <span>Print Pass</span>
                     </button>
                   </div>
 
@@ -282,14 +306,14 @@ export default function ReceptionistDashboard() {
                     rel="noopener noreferrer"
                     style={{
                       textAlign: 'center',
-                      fontSize: '0.78rem',
+                      fontSize: '0.75rem',
                       color: '#0D9488',
                       textDecoration: 'underline',
                       marginTop: '0.2rem',
-                      fontWeight: '600'
+                      fontWeight: '500'
                     }}
                   >
-                    Open Patient Tracker Page ↗
+                    Open Live Patient Tracker ↗
                   </a>
                 </div>
               )}
@@ -299,19 +323,19 @@ export default function ReceptionistDashboard() {
           {message && message.type === 'error' && (
             <div
               style={{
-                background: '#FEE2E2',
+                background: '#FEF2F2',
                 color: '#991B1B',
                 border: '1px solid #FECACA',
-                padding: '0.75rem',
-                borderRadius: '8px',
+                padding: '0.65rem 0.8rem',
+                borderRadius: '6px',
                 marginBottom: '1rem',
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.45rem'
               }}
             >
-              <AlertTriangleIcon size={16} color="#DC2626" />
+              <AlertTriangleIcon size={15} color="#DC2626" />
               <span>{message.text}</span>
             </div>
           )}
@@ -329,7 +353,7 @@ export default function ReceptionistDashboard() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.65rem' }}>
               <div style={{ flex: 1 }}>
                 <label style={labelStyle}>Age</label>
                 <input
@@ -358,7 +382,7 @@ export default function ReceptionistDashboard() {
             </div>
 
             <div>
-              <label style={labelStyle}>Phone Number</label>
+              <label style={labelStyle}>Contact Phone</label>
               <input
                 required
                 className="input-control"
@@ -382,7 +406,7 @@ export default function ReceptionistDashboard() {
             </div>
 
             <div>
-              <label style={labelStyle}>Assigned Doctor</label>
+              <label style={labelStyle}>Consulting Physician</label>
               <select
                 required
                 className="input-control"
@@ -399,206 +423,183 @@ export default function ReceptionistDashboard() {
               type="submit"
               disabled={registerLoading}
               className="btn-primary"
-              style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
+              style={{ width: '100%', marginTop: '0.4rem', padding: '0.65rem' }}
             >
               {registerLoading ? (
                 <>
                   <span className="spinner" style={{ width: '14px', height: '14px', borderTopColor: '#FFFFFF' }} />
-                  Issuing Token...
+                  <span>Issuing Token...</span>
                 </>
               ) : (
-                'Generate Token & QR Code'
+                'Generate Outpatient Token'
               )}
             </button>
           </form>
         </div>
 
-        {/* Quick Stats Panel */}
-        {stats && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div className="card" style={{ padding: '1rem 1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', color: '#64748B' }}>
-                Today's Total Registered
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#1E293B', marginTop: '0.2rem' }}>
-                {stats.total_patients}
-              </div>
+        {/* Right Column: Clean Clinical Queue Table */}
+        <div className="card" style={{ padding: '1.35rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0F172A', margin: 0 }}>
+                Live Outpatient Queue
+              </h2>
+              <p style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
+                Real-time queue sequence and remote digital pass status
+              </p>
             </div>
-
-            <div className="card" style={{ padding: '1rem 1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', color: '#64748B' }}>
-                Currently Waiting
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#F59E0B', marginTop: '0.2rem' }}>
-                {stats.waiting}
-              </div>
-            </div>
-
-            <div className="card" style={{ padding: '1rem 1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', color: '#64748B' }}>
-                In Active Consultation
-              </div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '800', color: '#0D9488', marginTop: '0.2rem' }}>
-                {stats.in_consultation}
-              </div>
-            </div>
+            <button
+              onClick={fetchData}
+              className="btn-secondary"
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
+            >
+              ↻ Refresh
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* ── Right Column: Queue View Table ── */}
-      <div className="card" style={{ padding: '1.5rem', alignSelf: 'start' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#1E293B', margin: 0 }}>
-              Live Virtual Queue
-            </h2>
-            <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.2rem' }}>
-              Patients track progress remotely via encrypted QR access links
-            </p>
-          </div>
-          <button
-            onClick={fetchData}
-            className="btn-secondary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-          >
-            ↻ Refresh Queue
-          </button>
-        </div>
-
-        <div className="table-container">
-          <table className="modern-table">
-            <thead>
-              <tr>
-                <th>Token</th>
-                <th>Patient</th>
-                <th>Doctor</th>
-                <th>Department</th>
-                <th>Status</th>
-                <th>Virtual Queue</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {queue.map(q => (
-                <tr key={q.id}>
-                  <td style={{ fontWeight: '800', color: '#0F766E' }}>{q.token_number}</td>
-                  <td style={{ fontWeight: '600' }}>{q.patient_name}</td>
-                  <td>{q.doctor_name}</td>
-                  <td style={{ color: '#64748B' }}>{q.department_name}</td>
-                  <td>
-                    <span className={`badge ${getBadgeClass(q.status)}`}>
-                      {formatStatus(q.status)}
-                    </span>
-                  </td>
-                  <td>
-                    {q.queue_access_token ? (
-                      <button
-                        onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
-                        className="btn-secondary"
-                        style={{
-                          padding: '0.3rem 0.65rem',
-                          fontSize: '0.76rem',
-                          borderRadius: '6px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem'
-                        }}
-                      >
-                        <QrCodeIcon size={13} color="currentColor" />
-                        <span>QR & Link</span>
-                      </button>
-                    ) : (
-                      <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    {q.status === 'WAITING' ? (
-                      <button
-                        onClick={() => cancelToken(q.id)}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid #FECACA',
-                          color: '#EF4444',
-                          padding: '0.25rem 0.55rem',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontSize: '0.76rem',
-                          fontWeight: '600'
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    ) : (
-                      <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {queue.length === 0 && (
+          <div className="table-container">
+            <table className="modern-table">
+              <thead>
                 <tr>
-                  <td colSpan="7" style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
-                    No patient tokens registered today.
-                  </td>
+                  <th>Token</th>
+                  <th>Patient Name</th>
+                  <th>Physician</th>
+                  <th>Department</th>
+                  <th>Queue Status</th>
+                  <th>Digital Pass</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {queue.map(q => (
+                  <tr key={q.id}>
+                    {/* Token */}
+                    <td style={{ fontWeight: '700', color: '#0F5147', fontSize: '0.9rem' }}>
+                      {q.token_number}
+                    </td>
+
+                    {/* Patient */}
+                    <td>
+                      <div style={{ fontWeight: '600', color: '#0F172A' }}>{q.patient_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        {q.patient_age ? `${q.patient_age} yrs` : ''} {q.patient_gender ? `• ${q.patient_gender}` : ''}
+                      </div>
+                    </td>
+
+                    {/* Doctor */}
+                    <td style={{ color: '#1E293B' }}>{q.doctor_name}</td>
+
+                    {/* Department */}
+                    <td style={{ color: '#64748B', fontSize: '0.8rem' }}>{q.department_name}</td>
+
+                    {/* Clinical Status Indicator (No Candy Pills!) */}
+                    <td>
+                      <div className="status-indicator">
+                        <span className={`status-dot ${getStatusDotClass(q.status)}`} />
+                        <span>{formatStatus(q.status)}</span>
+                      </div>
+                    </td>
+
+                    {/* Digital Pass Button (Single line, Sleek) */}
+                    <td>
+                      {q.queue_access_token ? (
+                        <button
+                          onClick={() => { setActiveQRModal(q); setModalCopied(false); }}
+                          className="table-action-btn"
+                        >
+                          <QrCodeIcon size={13} color="#0D9488" />
+                          <span>Queue Pass</span>
+                        </button>
+                      ) : (
+                        <span style={{ color: '#94A3B8', fontSize: '0.8rem' }}>—</span>
+                      )}
+                    </td>
+
+                    {/* Action */}
+                    <td style={{ textAlign: 'right' }}>
+                      {q.status === 'WAITING' ? (
+                        <button
+                          onClick={() => cancelToken(q.id)}
+                          className="table-cancel-btn"
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <span style={{ color: '#CBD5E1', fontSize: '0.8rem' }}>—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {queue.length === 0 && (
+                  <tr>
+                    <td colSpan="7" style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
+                      No outpatient entries registered in queue today.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
 
-      {/* ── QR Code Modal ── */}
+      {/* ── QR Code Pass Modal ── */}
       {activeQRModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#1E293B' }}>
-                Virtual Queue Token
-              </h3>
+              <div style={{ textAlign: 'left' }}>
+                <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#0D9488', fontWeight: '700' }}>
+                  Outpatient Digital Pass
+                </span>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '700', color: '#0F172A' }}>
+                  Token {activeQRModal.token_number}
+                </h3>
+              </div>
               <button
                 onClick={() => setActiveQRModal(null)}
                 style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
-                <CloseIcon size={18} color="#64748B" />
+                <CloseIcon size={16} color="#64748B" />
               </button>
             </div>
 
-            <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F766E', margin: '0.25rem 0' }}>
-              {activeQRModal.token_number}
-            </div>
-            <div style={{ fontSize: '0.9rem', color: '#1E293B', fontWeight: '600' }}>
-              {activeQRModal.patient_name}
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#64748B', marginBottom: '1rem' }}>
-              {activeQRModal.doctor_name} • {activeQRModal.department_name}
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.85rem', marginBottom: '1rem', textAlign: 'left' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0F172A' }}>
+                {activeQRModal.patient_name}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
+                {activeQRModal.doctor_name} • {activeQRModal.department_name}
+              </div>
             </div>
 
             <div
               style={{
                 background: '#FFFFFF',
                 border: '1px solid #E2E8F0',
-                borderRadius: '12px',
-                padding: '1.25rem',
+                borderRadius: '8px',
+                padding: '1.1rem',
                 display: 'inline-block',
-                margin: '0 auto 1rem auto'
+                margin: '0 auto 0.85rem auto'
               }}
             >
               <QRCodeSVG
                 value={`${window.location.origin}/queue/${activeQRModal.queue_access_token}`}
-                size={180}
+                size={160}
                 level="M"
               />
             </div>
 
-            <div style={{ fontSize: '0.8rem', color: '#475569', marginBottom: '1.25rem', lineHeight: 1.4 }}>
-              Patient can scan this code with their phone camera to track their queue position from anywhere.
+            <div style={{ fontSize: '0.78rem', color: '#475569', marginBottom: '1.25rem', lineHeight: 1.4 }}>
+              Patient can scan this code with their phone camera to monitor their live queue position remotely.
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.85rem' }}>
+            <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '0.85rem' }}>
               <button
                 onClick={() => copyToClipboard(`${window.location.origin}/queue/${activeQRModal.queue_access_token}`, true)}
                 className="btn-secondary"
-                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.82rem' }}
               >
                 <CopyIcon size={14} color="currentColor" />
                 <span>{modalCopied ? 'Copied' : 'Copy Link'}</span>
@@ -606,10 +607,10 @@ export default function ReceptionistDashboard() {
               <button
                 onClick={() => printTokenSlip(activeQRModal)}
                 className="btn-primary"
-                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontSize: '0.82rem' }}
               >
                 <PrinterIcon size={14} color="#FFFFFF" />
-                <span>Print Slip</span>
+                <span>Print Pass</span>
               </button>
             </div>
 
@@ -618,13 +619,13 @@ export default function ReceptionistDashboard() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
                 color: '#0D9488',
                 textDecoration: 'underline',
                 fontWeight: '600'
               }}
             >
-              Open Live Patient Tracker ↗
+              Open Live Tracker Page ↗
             </a>
           </div>
         </div>
@@ -636,27 +637,31 @@ export default function ReceptionistDashboard() {
 
 const labelStyle = {
   display: 'block',
-  marginBottom: '0.35rem',
-  fontSize: '0.8rem',
+  marginBottom: '0.3rem',
+  fontSize: '0.78rem',
   fontWeight: '600',
-  color: '#1E293B'
+  color: '#334155'
 };
 
-function getBadgeClass(status) {
+function getStatusDotClass(status) {
   switch (status) {
-    case 'WAITING': return 'badge-waiting';
-    case 'CALLED': return 'badge-called';
-    case 'IN_CONSULTATION': return 'badge-consultation';
-    case 'COMPLETED': return 'badge-completed';
-    case 'CANCELLED': return 'badge-cancelled';
-    default: return 'badge-noshow';
+    case 'WAITING': return 'status-dot--waiting';
+    case 'CALLED': return 'status-dot--called';
+    case 'IN_CONSULTATION': return 'status-dot--consultation';
+    case 'COMPLETED': return 'status-dot--completed';
+    case 'CANCELLED': return 'status-dot--cancelled';
+    default: return 'status-dot--noshow';
   }
 }
 
 function formatStatus(status) {
   switch (status) {
+    case 'WAITING': return 'Waiting';
+    case 'CALLED': return 'Called';
     case 'IN_CONSULTATION': return 'In Consultation';
+    case 'COMPLETED': return 'Completed';
+    case 'CANCELLED': return 'Cancelled';
     case 'NO_SHOW': return 'No Show';
-    default: return status.charAt(0) + status.slice(1).toLowerCase();
+    default: return status;
   }
 }

@@ -73,11 +73,11 @@ export default function Login() {
           >
             <MedicalCrossIcon size={24} color="#FFFFFF" />
           </div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-primary, #1E293B)', marginBottom: '0.35rem' }}>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0F5147', marginBottom: '0.25rem' }}>
             Invisible Queue AI
           </h1>
-          <p style={{ color: 'var(--text-secondary, #64748B)', fontSize: '0.88rem' }}>
-            Smart Hospital Queue Management System
+          <p style={{ color: '#64748B', fontSize: '0.82rem' }}>
+            Hospital Staff & Clinical Administration Portal
           </p>
         </div>
 

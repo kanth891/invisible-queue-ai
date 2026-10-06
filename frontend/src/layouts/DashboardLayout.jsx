@@ -50,9 +50,18 @@ export default function DashboardLayout({ allowedRoles = [] }) {
           </div>
         </div>
 
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: '600', color: '#0F5147', borderBottom: '2px solid #0D9488', paddingBottom: '0.25rem', cursor: 'pointer' }}>
+            {user.role === 'RECEPTIONIST' ? 'Outpatient Queue & Intake' : user.role === 'DOCTOR' ? 'Clinical Consultation' : 'System Overview'}
+          </span>
+          <span style={{ fontSize: '0.82rem', fontWeight: '500', color: '#64748B', cursor: 'default' }}>
+            {user.role === 'RECEPTIONIST' ? 'Daily Register' : user.role === 'DOCTOR' ? 'Patient Queue' : 'Departments & Staff'}
+          </span>
+        </nav>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#0F172A' }}>
               {user.name}
             </span>
             <span className="header__badge">

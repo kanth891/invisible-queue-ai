@@ -154,9 +154,10 @@ export default function AdminDashboard() {
                     <td style={{ fontWeight: '700', color: '#0F766E' }}>{d.code}</td>
                     <td style={{ fontWeight: '600' }}>{d.name}</td>
                     <td>
-                      <span className="badge badge-completed">
-                        {d.status}
-                      </span>
+                      <div className="status-indicator">
+                        <span className="status-dot status-dot--completed" />
+                        <span>{d.status === 'ACTIVE' ? 'Active' : d.status}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -194,9 +195,10 @@ export default function AdminDashboard() {
                     <td style={{ color: '#0F766E', fontWeight: '500' }}>{d.department_name} ({d.department_code})</td>
                     <td style={{ color: '#64748B' }}>{d.specialization}</td>
                     <td>
-                      <span className="badge badge-completed">
-                        {d.status}
-                      </span>
+                      <div className="status-indicator">
+                        <span className="status-dot status-dot--completed" />
+                        <span>{d.status === 'ACTIVE' ? 'Active' : d.status}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -235,22 +237,23 @@ export default function AdminDashboard() {
                     <td>
                       <span
                         style={{
-                          background: u.role === 'ADMIN' ? '#EFF6FF' : u.role === 'DOCTOR' ? '#CCFBF1' : '#F1F5F9',
+                          background: u.role === 'ADMIN' ? '#EFF6FF' : u.role === 'DOCTOR' ? '#F0FDFA' : '#F8FAFC',
                           color: u.role === 'ADMIN' ? '#1D4ED8' : u.role === 'DOCTOR' ? '#0F766E' : '#334155',
-                          border: `1px solid ${u.role === 'ADMIN' ? '#BFDBFE' : u.role === 'DOCTOR' ? '#99F6E4' : '#E2E8F0'}`,
-                          padding: '0.2rem 0.55rem',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          fontWeight: '700'
+                          border: `1px solid ${u.role === 'ADMIN' ? '#BFDBFE' : u.role === 'DOCTOR' ? '#CCFBF1' : '#E2E8F0'}`,
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.72rem',
+                          fontWeight: '600'
                         }}
                       >
                         {u.role}
                       </span>
                     </td>
                     <td>
-                      <span className="badge badge-completed">
-                        {u.status}
-                      </span>
+                      <div className="status-indicator">
+                        <span className="status-dot status-dot--completed" />
+                        <span>{u.status === 'ACTIVE' ? 'Active' : u.status}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -269,14 +272,14 @@ function Tab({ active, onClick, children }) {
     <button
       onClick={onClick}
       style={{
-        background: active ? '#CCFBF1' : '#FFFFFF',
+        background: active ? '#F0FDFA' : '#FFFFFF',
         color: active ? '#0F766E' : '#64748B',
         border: `1px solid ${active ? '#99F6E4' : '#E2E8F0'}`,
-        padding: '0.5rem 1rem',
-        borderRadius: '8px',
+        padding: '0.45rem 0.9rem',
+        borderRadius: '6px',
         cursor: 'pointer',
-        fontWeight: active ? '700' : '500',
-        fontSize: '0.85rem',
+        fontWeight: active ? '600' : '500',
+        fontSize: '0.82rem',
         transition: 'all 0.15s ease'
       }}
     >

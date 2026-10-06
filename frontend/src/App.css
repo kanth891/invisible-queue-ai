@@ -1,25 +1,27 @@
-/* ── App Layout & Healthcare Theme ──────────────── */
+/* ── Global Healthcare Layout (Apollo-Inspired Clinical SaaS) ── */
 .app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-primary, #F8FAFC);
-  color: var(--text-primary, #1E293B);
+  background-color: #F8FAFC;
+  color: #1E293B;
   position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Top Navigation / Header ────────────────────── */
+/* ── Top Navigation Bar (Apollo-Style Clean Medical Header) ── */
 .header {
-  padding: 1rem 2rem;
+  padding: 0.85rem 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
-  background: var(--bg-surface, #FFFFFF);
+  border-bottom: 1px solid #E2E8F0;
+  background: #FFFFFF;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .header__brand {
@@ -30,173 +32,135 @@
 }
 
 .header__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm, 8px);
-  background: var(--primary-teal, #0D9488);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #0D9488;
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25);
 }
 
 .header__title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-primary, #1E293B);
+  color: #0F5147;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.header__subtitle {
+  font-size: 0.75rem;
+  color: #64748B;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .header__badge {
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--primary-dark-teal, #0F766E);
-  background: var(--primary-teal-light, #CCFBF1);
-  padding: 0.25rem 0.65rem;
-  border-radius: 100px;
-  border: 1px solid #99F6E4;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #0F766E;
+  background: #F0FDFA;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #CCFBF1;
 }
 
-/* ── Main Container ────────────────────────────── */
+/* ── Main Layout Container ── */
 .main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem 1.5rem;
-  max-width: 1200px;
+  padding: 1.75rem 2rem;
+  max-width: 1280px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
-/* ── Hero / Welcome Section ────────────────────── */
-.hero {
-  text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-.hero__title {
-  font-size: 2.25rem;
-  font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 0.75rem;
-  color: var(--text-primary, #1E293B);
-}
-
-.hero__subtitle {
-  font-size: 1.05rem;
-  color: var(--text-secondary, #64748B);
-  font-weight: 400;
-  line-height: 1.6;
-  max-width: 580px;
-  margin: 0 auto;
-}
-
-/* ── Cards & Surfaces ──────────────────────────── */
-.status-card {
-  background: var(--bg-surface, #FFFFFF);
-  border: 1px solid var(--border-subtle, #E2E8F0);
-  border-radius: var(--radius-md, 12px);
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
+/* ── Clinical Category / Stat Cards (Apollo-Style) ── */
+.stat-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
-  box-shadow: var(--shadow-card, 0 1px 3px 0 rgba(0, 0, 0, 0.05));
+  margin-bottom: 1.5rem;
+}
+
+.clinical-stat-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.status-card:hover {
+.clinical-stat-card:hover {
   border-color: #CBD5E1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
 }
 
-.status-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem;
-  width: 100%;
-}
-
-.status-card__icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm, 8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  flex-shrink: 0;
-}
-
-.status-card__icon-wrap--success {
-  background: #D1FAE5;
-  color: #065F46;
-}
-
-.status-card__icon-wrap--warning {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-.status-card__icon-wrap--info {
-  background: #E0F2FE;
-  color: #0369A1;
-}
-
-.status-card__content {
-  flex: 1;
-  min-width: 0;
-}
-
-.status-card__label {
-  font-size: 0.8rem;
+.clinical-stat-card__label {
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-secondary, #64748B);
+  color: #64748B;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
 }
 
-.status-card__value {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--text-primary, #1E293B);
+.clinical-stat-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0F172A;
+  font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
-/* ── Modern Table Styles ───────────────────────── */
+/* ── Clean White Card Surfaces ── */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* ── Clean Healthcare Tables ── */
 .table-container {
   overflow-x: auto;
-  border: 1px solid var(--border-subtle, #E2E8F0);
-  border-radius: var(--radius-md, 12px);
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
   background: #FFFFFF;
 }
 
 .modern-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   text-align: left;
 }
 
 .modern-table th {
   background: #F8FAFC;
-  color: var(--text-secondary, #64748B);
+  color: #475569;
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
+  letter-spacing: 0.04em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #E2E8F0;
+  white-space: nowrap;
 }
 
 .modern-table td {
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
-  color: var(--text-primary, #1E293B);
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
   vertical-align: middle;
 }
 
@@ -208,64 +172,173 @@
   background-color: #F8FAFC;
 }
 
-/* ── Status Badges ─────────────────────────────── */
-.badge {
+/* ── Premium Status Indicators (No Cartoonish Candy Pills) ── */
+.status-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot--waiting {
+  background-color: #F59E0B;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.status-dot--called {
+  background-color: #0284C7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  animation: pulse 1.8s infinite;
+}
+
+.status-dot--consultation {
+  background-color: #0D9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.2);
+}
+
+.status-dot--completed {
+  background-color: #10B981;
+}
+
+.status-dot--cancelled {
+  background-color: #EF4444;
+}
+
+.status-dot--noshow {
+  background-color: #94A3B8;
+}
+
+/* ── Sleek Table Action Buttons (Fixing Image 2) ── */
+.table-action-btn {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #1E293B;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: all 0.15s ease;
   line-height: 1.3;
 }
 
-.badge-waiting {
-  background: #FEF3C7;
-  color: #92400E;
-  border: 1px solid #FDE68A;
-}
-
-.badge-called {
-  background: #EFF6FF;
-  color: #1D4ED8;
-  border: 1px solid #BFDBFE;
-}
-
-.badge-consultation {
-  background: #CCFBF1;
+.table-action-btn:hover {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
   color: #0F766E;
-  border: 1px solid #99F6E4;
 }
 
-.badge-completed {
-  background: #D1FAE5;
-  color: #065F46;
-  border: 1px solid #A7F3D0;
+.table-cancel-btn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
-.badge-cancelled {
-  background: #FEE2E2;
-  color: #991B1B;
-  border: 1px solid #FECACA;
+.table-cancel-btn:hover {
+  color: #DC2626;
+  text-decoration: underline;
 }
 
-.badge-noshow {
-  background: #F1F5F9;
+/* ── Primary & Secondary Clinical Buttons ── */
+.btn-primary {
+  background: #0D9488;
+  color: #FFFFFF;
+  border: 1px solid #0D9488;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0F766E;
+  border-color: #0F766E;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #FFFFFF;
   color: #334155;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #CBD5E1;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.88rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
 }
 
-/* ── Modal Overlay ─────────────────────────────── */
+.btn-secondary:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+/* ── Form Inputs ── */
+.input-control {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  color: #1E293B;
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.input-control:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+
+.input-control::placeholder {
+  color: #94A3B8;
+}
+
+/* ── Modal Overlay ── */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -275,35 +348,41 @@
 
 .modal-content {
   background: #FFFFFF;
-  border: 1px solid var(--border-subtle, #E2E8F0);
-  border-radius: var(--radius-lg, 16px);
-  padding: 2rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 1.75rem;
   max-width: 440px;
   width: 100%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
 }
 
-/* ── Footer ────────────────────────────────────── */
-.footer {
-  text-align: center;
-  padding: 1.5rem;
-  border-top: 1px solid var(--border-subtle, #E2E8F0);
-  color: var(--text-secondary, #64748B);
-  font-size: 0.8rem;
-  background: #FFFFFF;
+/* ── Spinner & Pulse ── */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #E2E8F0;
+  border-radius: 50%;
+  border-top-color: #0D9488;
+  animation: spin 0.7s linear infinite;
 }
 
-/* ── Responsive ────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.15); }
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
   .header {
-    padding: 0.85rem 1.25rem;
+    padding: 0.75rem 1rem;
   }
-
   .main {
-    padding: 1.25rem 1rem;
-  }
-
-  .hero__title {
-    font-size: 1.75rem;
+    padding: 1rem;
   }
 }

@@ -223,9 +223,10 @@ export default function DoctorDashboard() {
                       <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{q.patient_age} yrs • {q.patient_gender}</div>
                     </td>
                     <td>
-                      <span className="badge badge-waiting">
-                        Waiting in Queue
-                      </span>
+                      <div className="status-indicator">
+                        <span className="status-dot status-dot--waiting" />
+                        <span>Waiting</span>
+                      </div>
                     </td>
                     <td style={{ color: '#64748B', fontSize: '0.82rem' }}>
                       Prediction (Phase 3)
@@ -247,37 +248,31 @@ export default function DoctorDashboard() {
 
       {/* ── Sidebar: Today's Overview Metrics ── */}
       <div>
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: '700', color: '#1E293B', marginBottom: '1.25rem' }}>
-            Today's Room Summary
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <h2 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0F172A', marginBottom: '1rem' }}>
+            Room Overview
           </h2>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '1rem', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#92400E', textTransform: 'uppercase' }}>
-                Waiting Patients
-              </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#B45309', marginTop: '0.2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
+              <span className="clinical-stat-card__label">Waiting in Queue</span>
+              <span className="clinical-stat-card__value" style={{ color: '#D97706' }}>
                 {waitingPatients.length}
-              </div>
+              </span>
             </div>
 
-            <div style={{ background: '#D1FAE5', border: '1px solid #A7F3D0', padding: '1rem', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#065F46', textTransform: 'uppercase' }}>
-                Completed Consultations
-              </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#047857', marginTop: '0.2rem' }}>
+            <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
+              <span className="clinical-stat-card__label">Completed Consultations</span>
+              <span className="clinical-stat-card__value" style={{ color: '#10B981' }}>
                 {completedPatients.filter(p => p.status === 'COMPLETED').length}
-              </div>
+              </span>
             </div>
 
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '1rem', borderRadius: '10px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>
-                No-Shows / Cancelled
-              </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#475569', marginTop: '0.2rem' }}>
+            <div className="clinical-stat-card" style={{ padding: '0.9rem 1rem' }}>
+              <span className="clinical-stat-card__label">No-Shows / Cancelled</span>
+              <span className="clinical-stat-card__value" style={{ color: '#64748B' }}>
                 {completedPatients.filter(p => p.status !== 'COMPLETED').length}
-              </div>
+              </span>
             </div>
           </div>
         </div>
