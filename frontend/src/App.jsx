@@ -10,6 +10,20 @@ import AdminDashboard from './pages/admin/Dashboard';
 import ReceptionistDashboard from './pages/receptionist/Dashboard';
 import DoctorDashboard from './pages/doctor/Dashboard';
 
+import { useAuth } from './context/AuthContext';
+
+function RoleHome() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  switch (user.role) {
+    case 'ADMIN': return <Navigate to="/admin" replace />;
+    case 'RECEPTIONIST': return <Navigate to="/receptionist" replace />;
+    case 'DOCTOR': return <Navigate to="/doctor" replace />;
+    default: return <Navigate to="/login" replace />;
+  }
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -18,11 +32,8 @@ function AppRoutes() {
       {/* Public Patient Virtual Queue Tracker (No authentication required) */}
       <Route path="/queue/:accessToken" element={<PatientQueue />} />
       
-      {/* Protected Routes */}
-      <Route element={<DashboardLayout allowedRoles={[]} />}>
-        {/* If user hits /, they are redirected by layout to their specific dashboard based on role */}
-        <Route path="/" element={<div />} />
-      </Route>
+      {/* Root redirect based on role */}
+      <Route path="/" element={<RoleHome />} />
 
       <Route element={<DashboardLayout allowedRoles={['ADMIN']} />}>
         <Route path="/admin" element={<AdminDashboard />} />

@@ -20,7 +20,7 @@ export default function Login() {
       const user = await login(email, password);
       
       const from = location.state?.from?.pathname;
-      if (from) {
+      if (from && from !== '/') {
         navigate(from, { replace: true });
       } else {
         switch (user.role) {
