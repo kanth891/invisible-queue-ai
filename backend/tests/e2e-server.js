@@ -23,14 +23,18 @@ const db = {
     { id: 1, name: 'Admin User', email: 'admin@hospital.com', password_hash: hash('admin123'), role: 'ADMIN', status: 'ACTIVE' },
     { id: 2, name: 'Receptionist One', email: 'receptionist1@hospital.com', password_hash: hash('recep123'), role: 'RECEPTIONIST', status: 'ACTIVE' },
     { id: 3, name: 'Dr. Ravi Kumar', email: 'dr.ravi@hospital.com', password_hash: hash('doctor123'), role: 'DOCTOR', status: 'ACTIVE' },
+    { id: 4, name: 'Dr. Meera Nambiar', email: 'dr.meera@hospital.com', password_hash: hash('doctor123'), role: 'DOCTOR', status: 'ACTIVE' },
   ],
   departments: [
     { id: 1, name: 'General Medicine', code: 'GM', description: 'General medical consultations', status: 'ACTIVE' },
     { id: 2, name: 'Cardiology', code: 'CAR', description: 'Heart and cardiovascular care', status: 'ACTIVE' },
     { id: 3, name: 'Pediatrics', code: 'PED', description: 'Child healthcare', status: 'ACTIVE' },
+    { id: 4, name: 'Oncology', code: 'ONC', description: 'Comprehensive cancer care and consultation', status: 'ACTIVE' },
+    { id: 5, name: 'Dermatology', code: 'DERM', description: 'Skin, hair, and dermatological reviews', status: 'ACTIVE' },
   ],
   doctors: [
-    { id: 1, user_id: 3, department_id: 1, name: 'Dr. Ravi Kumar', specialization: 'General Physician', status: 'ACTIVE' }
+    { id: 1, user_id: 3, department_id: 1, name: 'Dr. Ravi Kumar', specialization: 'General Physician', status: 'ACTIVE' },
+    { id: 2, user_id: 4, department_id: 4, name: 'Dr. Meera Nambiar', specialization: 'Medical Oncologist', status: 'ACTIVE' }
   ],
   patients: [
     { id: 1, name: 'Rahul Verma', age: 28, gender: 'MALE', phone: '9876543210' },
