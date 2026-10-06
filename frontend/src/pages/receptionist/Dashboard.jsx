@@ -143,6 +143,9 @@ export default function ReceptionistDashboard() {
             <div><strong>Department:</strong> ${tokenData.department_name || 'Department'}</div>
             <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
           </div>
+          <div style="margin: 14px auto; text-align: center;">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(queueUrl)}" alt="QR Code" width="140" height="140" style="display: inline-block; border: 1px solid #ddd; border-radius: 8px; padding: 6px; background: #fff;" />
+          </div>
           <div class="instructions">
             <strong>Scan the QR code to monitor your queue remotely!</strong><br/>
             You do NOT need to wait near the consultation room.<br/>
