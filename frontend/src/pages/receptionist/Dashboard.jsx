@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { queueAPI, departmentsAPI, doctorsAPI, patientsAPI } from '../../services/api';
+import socketService, { SOCKET_EVENTS } from '../../services/socket';
 import { CopyIcon, PrinterIcon, QrCodeIcon, AlertTriangleIcon, CheckCircleIcon, CloseIcon } from '../../components/Icons';
 
 export default function ReceptionistDashboard() {
@@ -9,6 +10,8 @@ export default function ReceptionistDashboard() {
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [socketStatus, setSocketStatus] = useState('connecting');
+  const isMounted = useRef(true);
 
   // New Patient Form State
   const [formData, setFormData] = useState({
@@ -22,7 +25,7 @@ export default function ReceptionistDashboard() {
   const [activeQRModal, setActiveQRModal] = useState(null);
   const [modalCopied, setModalCopied] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [queueRes, statsRes, deptRes, docRes] = await Promise.all([
         queueAPI.list(),
@@ -30,22 +33,51 @@ export default function ReceptionistDashboard() {
         departmentsAPI.list('ACTIVE'),
         doctorsAPI.list({ status: 'ACTIVE' })
       ]);
-      setQueue(queueRes.data);
-      setStats(statsRes.data);
-      setDepartments(deptRes.data);
-      setDoctors(docRes.data);
+      if (isMounted.current) {
+        setQueue(queueRes.data);
+        setStats(statsRes.data);
+        setDepartments(deptRes.data);
+        setDoctors(docRes.data);
+      }
     } catch (err) {
       console.error('Receptionist fetch error:', err);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    isMounted.current = true;
     fetchData();
-    const t = setInterval(fetchData, 8000); // Auto refresh queue
-    return () => clearInterval(t);
-  }, []);
+
+    // Connect to Socket.IO and listen for real-time queue changes
+    const socket = socketService.connect();
+
+    const unsubStatus = socketService.subscribeStatus((st) => {
+      if (isMounted.current) setSocketStatus(st);
+    });
+
+    const unsubReconnect = socketService.onReconnect(() => {
+      fetchData();
+    });
+
+    const handleQueueUpdated = () => {
+      if (isMounted.current) fetchData();
+    };
+
+    socket.on(SOCKET_EVENTS.QUEUE_UPDATED, handleQueueUpdated);
+
+    // Fallback refresh interval (20s)
+    const t = setInterval(fetchData, 20000);
+
+    return () => {
+      isMounted.current = false;
+      clearInterval(t);
+      unsubStatus();
+      unsubReconnect();
+      socket.off(SOCKET_EVENTS.QUEUE_UPDATED, handleQueueUpdated);
+    };
+  }, [fetchData]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -175,6 +207,43 @@ export default function ReceptionistDashboard() {
 
   return (
     <div>
+      {/* ── Reception Header with Real-Time Indicator ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
+            Outpatient Reception Desk
+          </h1>
+          <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.2rem' }}>
+            Live Patient Intake, Digital Token Passes & Department Queues
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            background: socketStatus === 'connected' ? '#F0FDFA' : '#FFFBEB',
+            border: `1px solid ${socketStatus === 'connected' ? '#99F6E4' : '#FDE68A'}`,
+            padding: '0.3rem 0.65rem',
+            borderRadius: '100px',
+            fontSize: '0.75rem',
+            fontWeight: '700',
+            color: socketStatus === 'connected' ? '#0F766E' : '#B45309',
+          }}
+        >
+          <span
+            style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: socketStatus === 'connected' ? '#10B981' : '#F59E0B',
+            }}
+          />
+          <span>{socketStatus === 'connected' ? 'Live Connected' : 'Reconnecting...'}</span>
+        </div>
+      </div>
+
       {/* ── Apollo-Style Overview Cards ── */}
       {stats && (
         <div className="stat-card-row">

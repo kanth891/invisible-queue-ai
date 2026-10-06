@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { queueAPI } from '../../services/api';
+import socketService, { SOCKET_EVENTS } from '../../services/socket';
+import { useNotifications } from '../../context/NotificationContext';
 import { MedicalCrossIcon, SearchIcon, StethoscopeIcon, CheckCircleIcon, ClockIcon, PulseIcon } from '../../components/Icons';
 
-const DEFAULT_POLL_INTERVAL_MS = 6000;
+const FALLBACK_POLL_INTERVAL_MS = 15000;
 
 export default function PatientQueue() {
   const { accessToken } = useParams();
@@ -12,6 +14,8 @@ export default function PatientQueue() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const { notify, browserPermission, requestBrowserPermission } = useNotifications();
   const isMounted = useRef(true);
 
   const fetchQueue = useCallback(async (isManual = false) => {
@@ -36,24 +40,113 @@ export default function PatientQueue() {
     }
   }, [accessToken]);
 
+  // Real-Time Socket.IO Synchronization & Reconnect Handling
   useEffect(() => {
     isMounted.current = true;
     fetchQueue();
 
-    // Auto-polling interval
+    // 1. Connect and join patient-specific secure room
+    const socket = socketService.connect();
+    socketService.joinPatient(accessToken);
+
+    const unsubStatus = socketService.subscribeStatus((st) => {
+      if (isMounted.current) setConnectionStatus(st);
+    });
+
+    // When socket reconnects after network drop, refetch authoritative REST state
+    const unsubReconnect = socketService.onReconnect(() => {
+      fetchQueue();
+    });
+
+    // 2. Real-time event listeners
+    const handleWaitTimeUpdated = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, ...payload } : payload));
+      setLastUpdated(new Date());
+    };
+
+    const handlePatientApproaching = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, isApproaching: true, patientsAhead: payload.patientsAhead } : prev));
+      notify({
+        type: 'APPROACHING',
+        title: 'Turn Approaching',
+        message: payload.message || `Your consultation is approaching (${payload.patientsAhead} ahead). Please make your way back.`,
+        dedupeKey: `${accessToken}_APPROACHING`,
+      });
+      setLastUpdated(new Date());
+    };
+
+    const handlePatientTurn = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, status: 'CALLED', isApproaching: false, patientsAhead: 0, position: 1 } : prev));
+      notify({
+        type: 'TURN',
+        title: "IT'S YOUR TURN",
+        message: payload.message || 'Your token has been called! Please proceed to the consultation room.',
+        dedupeKey: `${accessToken}_TURN`,
+        duration: 0,
+      });
+      setLastUpdated(new Date());
+    };
+
+    const handleConsultationStarted = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, status: 'IN_CONSULTATION' } : prev));
+      setLastUpdated(new Date());
+    };
+
+    const handleConsultationCompleted = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, status: 'COMPLETED' } : prev));
+      setLastUpdated(new Date());
+    };
+
+    const handleNoShow = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, status: 'NO_SHOW' } : prev));
+      setLastUpdated(new Date());
+    };
+
+    const handleCancelled = (payload) => {
+      if (!isMounted.current) return;
+      setData((prev) => (prev ? { ...prev, status: 'CANCELLED' } : prev));
+      setLastUpdated(new Date());
+    };
+
+    socket.on(SOCKET_EVENTS.WAIT_TIME_UPDATED, handleWaitTimeUpdated);
+    socket.on(SOCKET_EVENTS.PATIENT_APPROACHING, handlePatientApproaching);
+    socket.on(SOCKET_EVENTS.PATIENT_TURN, handlePatientTurn);
+    socket.on(SOCKET_EVENTS.TOKEN_CALLED, handlePatientTurn);
+    socket.on(SOCKET_EVENTS.CONSULTATION_STARTED, handleConsultationStarted);
+    socket.on(SOCKET_EVENTS.CONSULTATION_COMPLETED, handleConsultationCompleted);
+    socket.on(SOCKET_EVENTS.PATIENT_NO_SHOW, handleNoShow);
+    socket.on(SOCKET_EVENTS.PATIENT_CANCELLED, handleCancelled);
+
+    // 3. Fallback polling for network resilience
     const intervalId = setInterval(() => {
-      // Don't poll if consultation is completed or cancelled
       if (data && ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(data.status)) {
         return;
       }
       fetchQueue();
-    }, DEFAULT_POLL_INTERVAL_MS);
+    }, FALLBACK_POLL_INTERVAL_MS);
 
     return () => {
       isMounted.current = false;
       clearInterval(intervalId);
+      unsubStatus();
+      unsubReconnect();
+      socket.off(SOCKET_EVENTS.WAIT_TIME_UPDATED, handleWaitTimeUpdated);
+      socket.off(SOCKET_EVENTS.PATIENT_APPROACHING, handlePatientApproaching);
+      socket.off(SOCKET_EVENTS.PATIENT_TURN, handlePatientTurn);
+      socket.off(SOCKET_EVENTS.TOKEN_CALLED, handlePatientTurn);
+      socket.off(SOCKET_EVENTS.CONSULTATION_STARTED, handleConsultationStarted);
+      socket.off(SOCKET_EVENTS.CONSULTATION_COMPLETED, handleConsultationCompleted);
+      socket.off(SOCKET_EVENTS.PATIENT_NO_SHOW, handleNoShow);
+      socket.off(SOCKET_EVENTS.PATIENT_CANCELLED, handleCancelled);
+      socketService.leavePatient(accessToken);
     };
-  }, [fetchQueue, data?.status]);
+  }, [accessToken, fetchQueue, notify]);
 
   if (loading && !data && !error) {
     return (
@@ -106,7 +199,7 @@ export default function PatientQueue() {
 
   return (
     <div className="patient-queue-container">
-      {/* Hospital Brand Header */}
+      {/* Hospital Brand Header with Live Status Indicator */}
       <div style={{ textAlign: 'center', marginBottom: '1.25rem', width: '100%', maxWidth: '420px' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
           <div
@@ -128,8 +221,25 @@ export default function PatientQueue() {
             Invisible Queue AI
           </span>
         </div>
-        <div style={{ fontSize: '0.75rem', color: '#64748B', letterSpacing: '0.02em', textTransform: 'uppercase', fontWeight: '500' }}>
-          Outpatient Digital Pass
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.45rem', fontSize: '0.75rem', color: '#64748B', letterSpacing: '0.02em', textTransform: 'uppercase', fontWeight: '500' }}>
+          <span>Outpatient Digital Pass</span>
+          <span>•</span>
+          {connectionStatus === 'connected' ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#0D9488', fontWeight: '700' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+              Live Sync
+            </span>
+          ) : connectionStatus === 'reconnecting' ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#F59E0B', fontWeight: '700' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
+              Reconnecting
+            </span>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#64748B' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#94A3B8', display: 'inline-block' }} />
+              Offline
+            </span>
+          )}
         </div>
       </div>
 
@@ -152,26 +262,28 @@ export default function PatientQueue() {
           </div>
         </div>
 
-        {/* ── Clinical Alerts & Status ── */}
+        {/* ── Clinical Alerts & Status (Phase 4 Real-Time Hierarchy) ── */}
 
-        {/* 1. YOUR TURN (Called) - Clinical Direct Notice */}
+        {/* 1. YOUR TURN (Called) - Prominent Notice */}
         {isCalled && (
           <div
             style={{
               background: '#F0FDFA',
-              border: '1px solid #99F6E4',
-              borderLeft: '4px solid #0D9488',
-              borderRadius: '8px',
-              padding: '0.9rem',
-              marginBottom: '1.15rem',
-              textAlign: 'center'
+              border: '2px solid #0D9488',
+              borderRadius: '10px',
+              padding: '1.1rem 1rem',
+              marginBottom: '1.25rem',
+              textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(13, 148, 136, 0.12)',
+              animation: 'pulseGlow 2s infinite ease-in-out',
             }}
           >
-            <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F5147', marginBottom: '0.2rem', letterSpacing: '0.02em' }}>
-              YOUR TURN NOW
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.15rem', fontWeight: '800', color: '#0F5147', marginBottom: '0.3rem', letterSpacing: '0.02em' }}>
+              <PulseIcon size={18} color="#0D9488" />
+              <span>IT'S YOUR TURN NOW</span>
             </div>
-            <div style={{ fontSize: '0.82rem', color: '#0F766E', lineHeight: 1.4 }}>
-              The doctor is ready for you. Please proceed to the consultation room immediately.
+            <div style={{ fontSize: '0.85rem', color: '#0F766E', lineHeight: 1.45, fontWeight: '500' }}>
+              Your token <strong>{data.token}</strong> has been called. Please proceed immediately to the consultation room.
             </div>
           </div>
         )}
@@ -190,10 +302,10 @@ export default function PatientQueue() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.88rem', fontWeight: '700', color: '#92400E', marginBottom: '0.2rem' }}>
               <span className="status-dot status-dot--waiting" />
-              <span>Your turn is approaching</span>
+              <span>Your Turn is Approaching</span>
             </div>
             <div style={{ fontSize: '0.78rem', color: '#78350F', lineHeight: 1.4 }}>
-              You are next in queue. Please make your way back towards the consultation area.
+              Only <strong>{data.patientsAhead}</strong> patient{data.patientsAhead === 1 ? '' : 's'} ahead. Please start making your way back to the consultation area.
             </div>
           </div>
         )}
@@ -266,7 +378,7 @@ export default function PatientQueue() {
           </div>
         )}
 
-        {/* ── Key Metrics Grid (Apollo-Style Clean Numbers) ── */}
+        {/* ── Key Metrics Grid (Serving, Position, Ahead) ── */}
         <div className="patient-metrics-grid">
           {/* Currently Serving */}
           <div className="patient-metric-box">
@@ -281,7 +393,7 @@ export default function PatientQueue() {
 
           {/* Your Position */}
           <div className="patient-metric-box">
-            <div className="patient-metric-label">Your Pos</div>
+            <div className="patient-metric-label">Position</div>
             <div
               className="patient-metric-value"
               style={{ color: data.position !== null ? '#0F172A' : '#94A3B8' }}
@@ -320,12 +432,64 @@ export default function PatientQueue() {
               <ClockIcon size={16} color="#0D9488" />
             </div>
             <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.45 }}>
-              <strong style={{ color: '#0F172A' }}>Remote Waiting Active.</strong> You are free to visit the cafe, pharmacy, or lobby. Pass syncs live automatically.
+              <strong style={{ color: '#0F172A' }}>Virtual Queue Active.</strong> You may relax in the cafeteria, outdoor courtyard, or lobby. This pass updates automatically in real-time.
             </div>
           </div>
         )}
 
-        {/* Estimated Wait Time Box (Phase 3 Intelligent Prediction) */}
+        {/* Phase 4 Browser Notification Permission Banner (Opt-in only, no spam) */}
+        {browserPermission === 'default' && ['WAITING', 'CALLED'].includes(data.status) && (
+          <div
+            style={{
+              background: '#F0F9FF',
+              border: '1px solid #BAE6FD',
+              borderRadius: '8px',
+              padding: '0.75rem 0.85rem',
+              marginBottom: '1.15rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ fontSize: '0.76rem', color: '#0369A1', flex: '1 1 200px' }}>
+              Want your device to ring when your turn approaches?
+            </div>
+            <button
+              onClick={requestBrowserPermission}
+              className="btn-primary"
+              style={{
+                padding: '0.35rem 0.65rem',
+                fontSize: '0.74rem',
+                minHeight: '32px',
+                flexShrink: 0,
+              }}
+            >
+              Enable Alerts
+            </button>
+          </div>
+        )}
+
+        {browserPermission === 'granted' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.35rem',
+              marginBottom: '1.15rem',
+              fontSize: '0.72rem',
+              color: '#0F766E',
+              fontWeight: '500',
+            }}
+          >
+            <span style={{ color: '#10B981' }}>✓</span>
+            <span>Live device alerts enabled</span>
+          </div>
+        )}
+
+        {/* Estimated Wait Time Box (Phase 3 & 4 AI Gradient Boosting / Fallback Range) */}
         {data.status === 'WAITING' && (
           <div
             style={{
@@ -351,7 +515,7 @@ export default function PatientQueue() {
               }}
             >
               <PulseIcon size={13} color="#0D9488" />
-              <span>Estimated Wait Time</span>
+              <span>AI-Estimated Waiting Time</span>
             </div>
 
             {refreshing && !data.prediction ? (
@@ -373,7 +537,7 @@ export default function PatientQueue() {
                   {data.prediction.lower_bound_minutes}–{data.prediction.upper_bound_minutes} min
                 </div>
                 <div style={{ fontSize: '0.76rem', color: '#0F766E', marginTop: '0.2rem', fontWeight: '500' }}>
-                  {data.prediction.message || 'Estimated wait based on current queue'}
+                  {data.prediction.message || 'Estimated wait based on current queue conditions'}
                 </div>
                 <div
                   style={{
@@ -389,12 +553,12 @@ export default function PatientQueue() {
                     border: '1px solid #CCFBF1'
                   }}
                 >
-                  <span>Model: {data.prediction.is_fallback ? 'Historical Baseline' : 'AI Gradient Boosting'}</span>
+                  <span>Model: {data.prediction.is_fallback ? 'Historical Median Baseline' : 'AI Gradient Boosting v1.0'}</span>
                 </div>
               </div>
             ) : (
               <div style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.4rem 0' }}>
-                Estimated wait unavailable — learning from queue telemetry.
+                Estimated wait temporarily unavailable — learning from queue telemetry.
               </div>
             )}
           </div>
@@ -420,14 +584,14 @@ export default function PatientQueue() {
                 width: '6px',
                 height: '6px',
                 borderRadius: '50%',
-                backgroundColor: refreshing ? '#F59E0B' : '#10B981',
+                backgroundColor: connectionStatus === 'connected' ? '#10B981' : refreshing ? '#F59E0B' : '#94A3B8',
                 flexShrink: 0
               }}
             />
-            <span>{refreshing ? 'Updating...' : 'Live sync'}</span>
+            <span>{connectionStatus === 'connected' ? 'Real-time connected' : refreshing ? 'Updating...' : 'Synced via REST'}</span>
             {lastUpdated && (
               <span style={{ color: '#94A3B8' }}>
-                • {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                • {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             )}
           </div>

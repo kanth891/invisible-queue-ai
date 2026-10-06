@@ -1,31 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { queueAPI } from '../../services/api';
-import { StethoscopeIcon, CheckCircleIcon } from '../../components/Icons';
+import socketService, { SOCKET_EVENTS } from '../../services/socket';
+import { useNotifications } from '../../context/NotificationContext';
+import { StethoscopeIcon, CheckCircleIcon, PulseIcon } from '../../components/Icons';
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [socketStatus, setSocketStatus] = useState('connecting');
+  const { notify } = useNotifications();
+  const isMounted = useRef(true);
 
-  const fetchQueue = async () => {
+  const fetchQueue = useCallback(async () => {
     if (!user.doctorInfo?.doctor_id) return;
     try {
       const res = await queueAPI.doctorQueue(user.doctorInfo.doctor_id);
-      setQueue(res.data);
+      if (isMounted.current) setQueue(res.data);
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, [user.doctorInfo?.doctor_id]);
 
   useEffect(() => {
+    isMounted.current = true;
     fetchQueue();
-    const t = setInterval(fetchQueue, 8000);
-    return () => clearInterval(t);
-  }, [user.doctorInfo?.doctor_id]);
+
+    const docId = user.doctorInfo?.doctor_id;
+    if (!docId) return;
+
+    // Connect to Socket.IO and join doctor room
+    const socket = socketService.connect();
+    socketService.joinDoctor(docId);
+
+    const unsubStatus = socketService.subscribeStatus((st) => {
+      if (isMounted.current) setSocketStatus(st);
+    });
+
+    const unsubReconnect = socketService.onReconnect(() => {
+      fetchQueue();
+    });
+
+    const handleQueueUpdated = (payload) => {
+      if (!isMounted.current) return;
+      fetchQueue();
+      if (payload?.action === 'NEW_PATIENT') {
+        notify({
+          type: 'INFO',
+          title: 'New Patient Arrived',
+          message: 'A new patient has been added to your queue.',
+        });
+      }
+    };
+
+    socket.on(SOCKET_EVENTS.QUEUE_UPDATED, handleQueueUpdated);
+
+    // Fallback polling (20s)
+    const t = setInterval(fetchQueue, 20000);
+
+    return () => {
+      isMounted.current = false;
+      clearInterval(t);
+      unsubStatus();
+      unsubReconnect();
+      socket.off(SOCKET_EVENTS.QUEUE_UPDATED, handleQueueUpdated);
+    };
+  }, [user.doctorInfo?.doctor_id, fetchQueue, notify]);
 
   const handleAction = async (id, action) => {
     try {
@@ -63,13 +107,40 @@ export default function DoctorDashboard() {
       
       {/* ── Main Area: Active Consultation & Waiting Queue ── */}
       <div>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
-            Welcome, {user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`}
-          </h1>
-          <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
-            {user.doctorInfo?.department_name || 'Consultation Room'} • Live Patient Queue
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#1E293B', margin: 0 }}>
+              Welcome, {user.name.startsWith('Dr.') ? user.name : `Dr. ${user.name}`}
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
+              {user.doctorInfo?.department_name || 'Consultation Room'} • Live Patient Queue
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              background: socketStatus === 'connected' ? '#F0FDFA' : '#FFFBEB',
+              border: `1px solid ${socketStatus === 'connected' ? '#99F6E4' : '#FDE68A'}`,
+              padding: '0.3rem 0.65rem',
+              borderRadius: '100px',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              color: socketStatus === 'connected' ? '#0F766E' : '#B45309',
+            }}
+          >
+            <span
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: socketStatus === 'connected' ? '#10B981' : '#F59E0B',
+              }}
+            />
+            <span>{socketStatus === 'connected' ? 'Live Connected' : 'Reconnecting...'}</span>
+          </div>
         </div>
 
         {/* Current Patient Card */}

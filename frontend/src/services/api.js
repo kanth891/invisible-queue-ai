@@ -83,3 +83,10 @@ export const usersAPI = {
   create: (data) => request('/api/users', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 };
+
+// ── Analytics (Phase 4) ─────────────────────────────
+export const analyticsAPI = {
+  liveStatus: () => request('/api/analytics/live-status'),
+  overview: () => request('/api/analytics/overview'),
+};
+
