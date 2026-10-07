@@ -109,7 +109,7 @@ export default function DashboardLayout({ allowedRoles = [] }) {
             style={{
               padding: '0.45rem 0.95rem',
               fontSize: '0.82rem',
-              borderRadius: '8px',
+              borderRadius: '0',
               minHeight: '36px'
             }}
           >

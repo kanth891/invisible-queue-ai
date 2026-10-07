@@ -151,10 +151,10 @@ export default function ReceptionistDashboard() {
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 24px; color: #0F172A; }
             .hospital { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; color: #1E3A8A; margin-bottom: 2px; }
             .subtitle { font-size: 11px; color: #64748B; margin-bottom: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
-            .token-box { margin: 16px 0; padding: 14px; border: 1.5px solid #2563EB; border-radius: 8px; background: #EFF6FF; }
+            .token-box { margin: 16px 0; padding: 14px; border: 1.5px solid #2563EB; border-radius: 0; background: #EFF6FF; }
             .token-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #1D4ED8; letter-spacing: 0.05em; }
             .token { font-size: 48px; font-weight: 900; letter-spacing: 0.02em; margin: 4px 0; color: #1D4ED8; }
-            .info { font-size: 12px; text-align: left; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 6px; margin: 16px 0; line-height: 1.6; }
+            .info { font-size: 12px; text-align: left; background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 0; margin: 16px 0; line-height: 1.6; }
             .instructions { font-size: 11px; color: #475569; margin-top: 14px; line-height: 1.4; border-top: 1px solid #E2E8F0; padding-top: 12px; }
             .url { font-size: 10px; color: #64748B; margin-top: 8px; word-break: break-all; }
             @media print {
@@ -176,7 +176,7 @@ export default function ReceptionistDashboard() {
             <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
           </div>
           <div style="margin: 14px auto; text-align: center;">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(queueUrl)}" alt="QR Code" width="130" height="130" style="display: inline-block; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px; background: #fff;" />
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(queueUrl)}" alt="QR Code" width="130" height="130" style="display: inline-block; border: 1px solid #CBD5E1; border-radius: 0; padding: 6px; background: #fff;" />
           </div>
           <div class="instructions">
             <strong>Scan the QR code to track your queue remotely.</strong><br/>
@@ -226,7 +226,7 @@ export default function ReceptionistDashboard() {
             background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
             border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
             padding: '0.35rem 0.75rem',
-            borderRadius: '100px',
+            borderRadius: '0',
             fontSize: '0.75rem',
             fontWeight: '700',
             color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
@@ -286,7 +286,7 @@ export default function ReceptionistDashboard() {
                 border: '1px solid #BAE6FD',
                 boxShadow: '0 8px 25px rgba(2, 132, 199, 0.1)',
                 padding: '1.25rem',
-                borderRadius: '12px',
+                borderRadius: '0',
                 marginBottom: '1.35rem',
               }}
             >
@@ -335,7 +335,7 @@ export default function ReceptionistDashboard() {
                   style={{
                     background: '#FFFFFF',
                     border: '1px solid #E2E8F0',
-                    borderRadius: '10px',
+                    borderRadius: '0',
                     padding: '0.9rem',
                     display: 'flex',
                     flexDirection: 'column',
@@ -408,7 +408,7 @@ export default function ReceptionistDashboard() {
                 color: '#B91C1C',
                 border: '1px solid #FECACA',
                 padding: '0.75rem 0.95rem',
-                borderRadius: '8px',
+                borderRadius: '0',
                 marginBottom: '1rem',
                 fontSize: '0.82rem',
                 display: 'flex',
@@ -709,7 +709,7 @@ export default function ReceptionistDashboard() {
               </button>
             </div>
 
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.9rem', marginBottom: '1.1rem', textAlign: 'left' }}>
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '0', padding: '0.9rem', marginBottom: '1.1rem', textAlign: 'left' }}>
               <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                 {activeQRModal.patient_name}
               </div>
@@ -722,7 +722,7 @@ export default function ReceptionistDashboard() {
               style={{
                 background: '#FFFFFF',
                 border: '1px solid #CBD5E1',
-                borderRadius: '12px',
+                borderRadius: '0',
                 padding: '1.25rem',
                 display: 'inline-block',
                 margin: '0 auto 1rem auto',

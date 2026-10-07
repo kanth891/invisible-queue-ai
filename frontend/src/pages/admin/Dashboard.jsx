@@ -109,7 +109,7 @@ export default function AdminDashboard() {
               background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
               border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
               padding: '0.35rem 0.75rem',
-              borderRadius: '100px',
+              borderRadius: '0',
               fontSize: '0.75rem',
               fontWeight: '700',
               color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
                 color: '#1D4ED8',
                 border: '1px solid #BFDBFE',
                 padding: '0.3rem 0.8rem',
-                borderRadius: '100px',
+                borderRadius: '0',
                 fontSize: '0.75rem',
                 fontWeight: '700',
                 display: 'inline-flex',
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
                   Real-time synchronization across outpatient departments
                 </p>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#1D4ED8', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '0.25rem 0.6rem', borderRadius: '100px', fontWeight: '700' }}>
+              <span style={{ fontSize: '0.72rem', color: '#1D4ED8', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '0.25rem 0.6rem', borderRadius: '0', fontWeight: '700' }}>
                 Auto-updating via Socket.IO
               </span>
             </div>
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
                         background: dept.status === 'Active' ? '#ECFDF5' : '#F1F5F9',
                         color: dept.status === 'Active' ? '#047857' : 'var(--text-muted)',
                         padding: '0.2rem 0.65rem',
-                        borderRadius: '100px',
+                        borderRadius: '0',
                         fontSize: '0.72rem',
                         fontWeight: '700',
                         border: `1px solid ${dept.status === 'Active' ? '#A7F3D0' : '#E2E8F0'}`
@@ -279,7 +279,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#F8FAFC', padding: '0.95rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#F8FAFC', padding: '0.95rem', borderRadius: '0', border: '1px solid #E2E8F0' }}>
                     <div>
                       <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.06em' }}>
                         Currently Serving
@@ -456,7 +456,7 @@ export default function AdminDashboard() {
             </div>
 
             {(!analyticsData?.predictedVsActual || analyticsData.predictedVsActual.length === 0) ? (
-              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#F8FAFC', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#F8FAFC', borderRadius: '0', border: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                   Not enough historical consultation data yet.
                 </div>
@@ -607,7 +607,7 @@ export default function AdminDashboard() {
                         fontSize: '0.75rem',
                         fontWeight: '700',
                         padding: '0.25rem 0.6rem',
-                        borderRadius: '6px',
+                        borderRadius: '0',
                         background: u.role === 'ADMIN' ? '#EEF2FF' : u.role === 'DOCTOR' ? '#EFF6FF' : '#ECFDF5',
                         color: u.role === 'ADMIN' ? '#4F46E5' : u.role === 'DOCTOR' ? '#1D4ED8' : '#047857',
                         border: `1px solid ${u.role === 'ADMIN' ? '#C7D2FE' : u.role === 'DOCTOR' ? '#BFDBFE' : '#A7F3D0'}`
@@ -642,7 +642,7 @@ export default function AdminDashboard() {
                   Model Version: {predictionMetrics?.modelInfo?.version || 'v1.0-gb'} • Architecture: {predictionMetrics?.modelInfo?.name || 'GradientBoostingRegressor'}
                 </p>
               </div>
-              <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.3rem 0.8rem', borderRadius: '100px', fontSize: '0.75rem', fontWeight: '700' }}>
+              <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.3rem 0.8rem', borderRadius: '0', fontSize: '0.75rem', fontWeight: '700' }}>
                 Python FastAPI Live
               </span>
             </div>
@@ -703,7 +703,7 @@ export default function AdminDashboard() {
                             background: p.is_fallback ? '#FEF3C7' : '#EFF6FF',
                             color: p.is_fallback ? '#B45309' : '#1D4ED8',
                             padding: '0.2rem 0.5rem',
-                            borderRadius: '6px',
+                            borderRadius: '0',
                             border: `1px solid ${p.is_fallback ? '#FDE68A' : '#BFDBFE'}`,
                             fontWeight: '700'
                           }}>
@@ -743,7 +743,7 @@ function Tab({ active, onClick, children }) {
         minHeight: '40px',
         flexShrink: 0,
         whiteSpace: 'nowrap',
-        borderRadius: '8px',
+        borderRadius: '0',
         cursor: 'pointer',
         fontWeight: active ? '700' : '600',
         fontSize: '0.82rem',

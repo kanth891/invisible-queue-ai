@@ -216,7 +216,7 @@ export default function PatientQueue() {
             style={{
               width: '28px',
               height: '28px',
-              borderRadius: '8px',
+              borderRadius: '0',
               background: 'var(--primary-gradient)',
               color: '#FFFFFF',
               display: 'flex',
@@ -281,7 +281,7 @@ export default function PatientQueue() {
             style={{
               background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
               border: '2px solid #2563EB',
-              borderRadius: '12px',
+              borderRadius: '0',
               padding: '1.2rem 1rem',
               marginBottom: '1.35rem',
               textAlign: 'center',
@@ -306,7 +306,7 @@ export default function PatientQueue() {
               background: 'linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%)',
               border: '1px solid #FDE68A',
               borderLeft: '4px solid #D97706',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '0.95rem 1rem',
               marginBottom: '1.35rem',
               boxShadow: '0 4px 15px rgba(217, 119, 6, 0.12)'
@@ -328,7 +328,7 @@ export default function PatientQueue() {
             style={{
               background: '#ECFDF5',
               border: '1px solid #A7F3D0',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '0.95rem 1rem',
               marginBottom: '1.35rem',
               textAlign: 'center',
@@ -351,7 +351,7 @@ export default function PatientQueue() {
             style={{
               background: '#F1F5F9',
               border: '1px solid #E2E8F0',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '1rem',
               marginBottom: '1.35rem',
               textAlign: 'center'
@@ -373,7 +373,7 @@ export default function PatientQueue() {
             style={{
               background: '#FEF2F2',
               border: '1px solid #FECACA',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '1rem',
               marginBottom: '1.35rem',
               textAlign: 'center'
@@ -396,7 +396,7 @@ export default function PatientQueue() {
               background: '#FEF3C7',
               border: '1px solid #FDE68A',
               borderLeft: '4px solid #D97706',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '0.95rem 1rem',
               marginBottom: '1.35rem'
             }}
@@ -422,7 +422,7 @@ export default function PatientQueue() {
               padding: '0.55rem 0.85rem',
               background: '#F8FAFC',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '8px',
+              borderRadius: '0',
               marginBottom: '1.35rem',
               fontSize: '0.84rem',
               fontWeight: '600',
@@ -477,7 +477,7 @@ export default function PatientQueue() {
             style={{
               background: '#F8FAFC',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '0.85rem 0.95rem',
               marginBottom: '1.35rem',
               display: 'flex',
@@ -500,7 +500,7 @@ export default function PatientQueue() {
             style={{
               background: '#EFF6FF',
               border: '1px solid #BFDBFE',
-              borderRadius: '10px',
+              borderRadius: '0',
               padding: '0.85rem 0.95rem',
               marginBottom: '1.35rem',
               display: 'flex',
@@ -552,7 +552,7 @@ export default function PatientQueue() {
             style={{
               background: 'linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 100%)',
               border: '1px solid #BFDBFE',
-              borderRadius: '12px',
+              borderRadius: '0',
               padding: '1.1rem 1.15rem',
               marginBottom: '1.35rem',
               textAlign: 'center',
@@ -607,7 +607,7 @@ export default function PatientQueue() {
                     color: '#1D4ED8',
                     background: '#FFFFFF',
                     padding: '0.25rem 0.65rem',
-                    borderRadius: '6px',
+                    borderRadius: '0',
                     border: '1px solid #BFDBFE'
                   }}
                 >

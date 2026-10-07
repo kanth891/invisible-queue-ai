@@ -88,7 +88,7 @@ export default function Login() {
             style={{
               width: '52px',
               height: '52px',
-              borderRadius: '14px',
+              borderRadius: '0',
               background: 'var(--primary-gradient)',
               color: '#FFFFFF',
               display: 'flex',
@@ -127,7 +127,7 @@ export default function Login() {
               color: '#B91C1C',
               border: '1px solid #FECACA',
               padding: '0.75rem 1rem',
-              borderRadius: '8px',
+              borderRadius: '0',
               marginBottom: '1.25rem',
               fontSize: '0.85rem',
               display: 'flex',
