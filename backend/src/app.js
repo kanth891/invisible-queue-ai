@@ -14,11 +14,19 @@ import authRoutes from './routes/auth.js';
 import departmentRoutes from './routes/departments.js';
 import doctorRoutes from './routes/doctors.js';
 import patientRoutes from './routes/patients.js';
-import queueRoutes, { getPatientQueueAccess, getPatientPrediction } from './routes/queue.js';
+import queueRoutes, {
+  getPatientQueueAccess,
+  getPatientPrediction,
+  patientCancelQueue,
+  patientRejoinQueue,
+  getPatientRescheduleOptions,
+  patientRescheduleQueue,
+} from './routes/queue.js';
 import userRoutes from './routes/users.js';
 import analyticsRoutes from './routes/analytics.js';
 import { autoMigrate } from './db/autoMigrate.js';
 import { initSocket } from './socket/index.js';
+import { startMissedTokenWorker } from './services/missedTokenReconciler.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -68,9 +76,19 @@ app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', versio
 // ── Public routes ─────────────────────────────────
 app.use('/api/auth', authRoutes);
 
-// Phase 2 & 3: Virtual Queue Patient Access (Public tracking & AI prediction by secure random token)
+// Public Patient Virtual Queue Access & Patient Queue Control
 app.get('/api/queue/access/:accessToken', getPatientQueueAccess);
 app.get('/api/queue/access/:accessToken/prediction', getPatientPrediction);
+app.post('/api/queue/access/:accessToken/cancel', patientCancelQueue);
+app.post('/api/queue/access/:accessToken/rejoin', patientRejoinQueue);
+app.get('/api/queue/access/:accessToken/reschedule-options', getPatientRescheduleOptions);
+app.post('/api/queue/access/:accessToken/reschedule', patientRescheduleQueue);
+
+// Aliases for /api/queue/patient/* endpoints
+app.post('/api/queue/patient/cancel', patientCancelQueue);
+app.post('/api/queue/patient/rejoin', patientRejoinQueue);
+app.get('/api/queue/patient/reschedule-options', getPatientRescheduleOptions);
+app.post('/api/queue/patient/reschedule', patientRescheduleQueue);
 
 // ── Protected routes ──────────────────────────────
 app.use('/api/departments', authenticate, departmentRoutes);
@@ -90,7 +108,10 @@ server.listen(PORT, async () => {
   console.log(`[START] Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
   if (process.env.DATABASE_URL) {
     const ok = await testConnection();
-    if (ok) await autoMigrate();
+    if (ok) {
+      await autoMigrate();
+      startMissedTokenWorker(15000);
+    }
   } else {
     console.warn('[WARN] DATABASE_URL not set');
   }

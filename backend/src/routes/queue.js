@@ -3,6 +3,10 @@ import crypto from 'crypto';
 import pool from '../db/index.js';
 import { authorize } from '../middleware/auth.js';
 import mlClient from '../services/mlClient.js';
+import { getSetting, getAllSettings, updateSettings } from '../services/settingsService.js';
+import { logQueueEvent, getQueueEvents, QUEUE_EVENT_TYPES } from '../services/queueAuditService.js';
+import { evaluateDoctorAvailability, pauseDoctorQueue, resumeDoctorQueue, getTodayDateString } from '../services/doctorAvailabilityService.js';
+import { checkAndReconcileSingleEntry, reconcileMissedTokens } from '../services/missedTokenReconciler.js';
 import {
   SOCKET_EVENTS,
   emitToPatient,
@@ -19,7 +23,8 @@ export const APPROACHING_THRESHOLD = parseInt(process.env.APPROACHING_THRESHOLD 
 // ── Valid state transitions ────────────────────────
 const VALID_TRANSITIONS = {
   WAITING:          ['CALLED', 'CANCELLED', 'NO_SHOW'],
-  CALLED:           ['IN_CONSULTATION', 'NO_SHOW'],
+  CALLED:           ['IN_CONSULTATION', 'MISSED', 'NO_SHOW', 'CANCELLED'],
+  MISSED:           ['WAITING', 'NO_SHOW', 'CANCELLED'],
   IN_CONSULTATION:  ['COMPLETED'],
   COMPLETED:        [],
   CANCELLED:        [],
@@ -125,6 +130,35 @@ export async function computeQueuePrediction(entry, activeEntries = null) {
           model_version: 'v1.0',
           message: 'Consultation completed',
           is_completed: true,
+          generated_at: new Date().toISOString(),
+        };
+      }
+      if (entry.status === 'MISSED') {
+        return {
+          token: entry.token_number,
+          status: 'MISSED',
+          patients_ahead: 0,
+          predicted_wait_minutes: 0,
+          lower_bound_minutes: 0,
+          upper_bound_minutes: 0,
+          model_version: 'v1.0',
+          message: 'Your token was missed. You were not present when called. You may rejoin the queue.',
+          is_missed: true,
+          rejoin_count: entry.rejoin_count || 0,
+          generated_at: new Date().toISOString(),
+        };
+      }
+      if (entry.status === 'CANCELLED') {
+        return {
+          token: entry.token_number,
+          status: 'CANCELLED',
+          patients_ahead: 0,
+          predicted_wait_minutes: 0,
+          lower_bound_minutes: 0,
+          upper_bound_minutes: 0,
+          model_version: 'v1.0',
+          message: 'Queue entry cancelled',
+          is_cancelled: true,
           generated_at: new Date().toISOString(),
         };
       }
@@ -409,6 +443,21 @@ export async function syncDoctorQueueRealtime(doctorId, departmentId, triggeredE
           status: 'CANCELLED',
           message: 'Queue entry cancelled.',
         });
+      } else if (triggeredEntry.status === 'MISSED') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.PATIENT_MISSED, {
+          token: triggeredEntry.token_number,
+          status: 'MISSED',
+          message: 'Your token was missed. You were not present when your token was called. You may rejoin the queue.',
+          rejoinCount: triggeredEntry.rejoin_count || 0,
+          missedAt: triggeredEntry.missed_at,
+        });
+      } else if (triggeredEntry.status === 'WAITING' && action === 'REJOINED') {
+        emitToPatient(triggeredEntry.queue_access_token, SOCKET_EVENTS.PATIENT_REJOINED, {
+          token: triggeredEntry.token_number,
+          status: 'WAITING',
+          message: 'You have rejoined the queue at the end.',
+          rejoinCount: triggeredEntry.rejoin_count || 0,
+        });
       }
     }
 
@@ -520,11 +569,18 @@ export async function getPatientQueueAccess(req, res) {
 
     const entryResult = await pool.query(
       `SELECT qe.id, qe.token_number, qe.status, qe.doctor_id, qe.department_id, qe.queue_date,
-              u.name as doctor_name, dep.name as department_name
+              qe.called_at, qe.missed_at, qe.rejoin_count, qe.reschedule_count,
+              qe.transferred_from_doctor_id, qe.transferred_at,
+              u.name as doctor_name, dep.name as department_name,
+              d.room_number, d.operational_status as doctor_operational_status,
+              d.pause_reason as doctor_pause_reason, d.paused_at as doctor_paused_at,
+              u_prev.name as transferred_from_doctor_name
        FROM queue_entries qe
        JOIN doctors d ON qe.doctor_id = d.id
        JOIN users u ON d.user_id = u.id
        JOIN departments dep ON qe.department_id = dep.id
+       LEFT JOIN doctors d_prev ON qe.transferred_from_doctor_id = d_prev.id
+       LEFT JOIN users u_prev ON d_prev.user_id = u_prev.id
        WHERE qe.queue_access_token = $1`,
       [accessToken.trim()]
     );
@@ -536,7 +592,12 @@ export async function getPatientQueueAccess(req, res) {
       });
     }
 
-    const entry = entryResult.rows[0];
+    let entry = entryResult.rows[0];
+
+    // Backend-authoritative missed-token check on access
+    if (entry.status === 'CALLED') {
+      entry = await checkAndReconcileSingleEntry(entry);
+    }
 
     // Query active entries for this doctor on this queue_date
     // Active statuses are CALLED, IN_CONSULTATION, and WAITING
@@ -569,28 +630,35 @@ export async function getPatientQueueAccess(req, res) {
     let patientsAhead = 0;
 
     if (patientIndex !== -1) {
-      // 1-indexed position in active queue
       position = patientIndex + 1;
       patientsAhead = patientIndex;
     } else {
-      // Patient is not in active queue (COMPLETED, CANCELLED, or NO_SHOW)
       position = null;
       patientsAhead = 0;
     }
 
-    // Configurable approaching threshold (default 2)
     const approachingThreshold = parseInt(process.env.APPROACHING_THRESHOLD || '2', 10);
     const isApproaching = entry.status === 'WAITING' && patientsAhead <= approachingThreshold;
 
     // Phase 3: Compute intelligent waiting-time prediction
     const prediction = await computeQueuePrediction(entry, activeEntries);
 
+    // Settings for policies
+    const graceMinutes = await getSetting('missed_grace_period_minutes');
+    const maxRejoins = await getSetting('max_rejoins');
+    const maxReschedules = await getSetting('max_reschedules');
+    const graceDeadline = entry.called_at
+      ? new Date(new Date(entry.called_at).getTime() + graceMinutes * 60000).toISOString()
+      : null;
+
     res.json({
       status: 'ok',
       data: {
         token: entry.token_number,
         doctor: entry.doctor_name,
+        doctorId: entry.doctor_id,
         department: entry.department_name,
+        departmentId: entry.department_id,
         status: entry.status,
         currentToken,
         position,
@@ -599,11 +667,398 @@ export async function getPatientQueueAccess(req, res) {
         approachingThreshold,
         queueDate: entry.queue_date,
         prediction,
+        calledAt: entry.called_at,
+        missedAt: entry.missed_at,
+        gracePeriodMinutes: graceMinutes,
+        graceDeadline,
+        rejoinCount: entry.rejoin_count || 0,
+        maxRejoins,
+        rescheduleCount: entry.reschedule_count || 0,
+        maxReschedules,
+        doctorOperationalStatus: entry.doctor_operational_status || 'AVAILABLE',
+        doctorPauseReason: entry.doctor_pause_reason || null,
+        doctorPausedAt: entry.doctor_paused_at || null,
+        roomNumber: entry.room_number || 'Room 101',
+        transferredAt: entry.transferred_at || null,
+        transferredFromDoctorName: entry.transferred_from_doctor_name || null,
       },
     });
   } catch (err) {
     console.error('Patient queue access error:', err);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+}
+
+/**
+ * POST /api/queue/access/:accessToken/cancel
+ * Public patient endpoint: Cancels own queue entry with confirmation.
+ */
+export async function patientCancelQueue(req, res) {
+  try {
+    const accessToken = req.params?.accessToken || req.body?.accessToken || req.query?.accessToken;
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+    }
+
+    const entryRes = await pool.query(
+      `SELECT qe.*, u.name as doctor_name, dep.name as department_name
+       FROM queue_entries qe
+       JOIN doctors d ON qe.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.queue_access_token = $1`,
+      [accessToken.trim()]
+    );
+
+    if (entryRes.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+    }
+
+    const entry = entryRes.rows[0];
+    if (['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(entry.status)) {
+      return res.status(400).json({ status: 'error', message: `Cannot cancel queue entry with status ${entry.status}` });
+    }
+    if (entry.status === 'IN_CONSULTATION') {
+      return res.status(400).json({ status: 'error', message: 'Cannot cancel consultation already in progress' });
+    }
+
+    const updateRes = await pool.query(
+      `UPDATE queue_entries SET status = 'CANCELLED' WHERE id = $1 RETURNING *`,
+      [entry.id]
+    );
+
+    await logQueueEvent(pool, {
+      queueEntryId: entry.id,
+      eventType: QUEUE_EVENT_TYPES.CANCELLED,
+      actorType: 'PATIENT',
+      details: { token: entry.token_number, previousStatus: entry.status },
+    });
+
+    const updated = { ...entry, ...updateRes.rows[0] };
+    syncDoctorQueueRealtime(entry.doctor_id, entry.department_id, updated, 'CANCELLED');
+
+    res.json({
+      status: 'ok',
+      message: 'Queue entry cancelled successfully',
+      data: { token: entry.token_number, status: 'CANCELLED' },
+    });
+  } catch (err) {
+    console.error('Patient cancel queue error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+}
+
+/**
+ * POST /api/queue/access/:accessToken/rejoin
+ * Public patient endpoint: Rejoin queue after being marked MISSED.
+ * Places patient at the end of the current active queue.
+ */
+export async function patientRejoinQueue(req, res) {
+  const client = await pool.connect();
+  try {
+    const accessToken = req.params?.accessToken || req.body?.accessToken || req.query?.accessToken;
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+    }
+
+    const entryRes = await client.query(
+      `SELECT qe.*, u.name as doctor_name, dep.name as department_name, d.status as doc_status, d.operational_status
+       FROM queue_entries qe
+       JOIN doctors d ON qe.doctor_id = d.id
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.queue_access_token = $1`,
+      [accessToken.trim()]
+    );
+
+    if (entryRes.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+    }
+
+    let entry = entryRes.rows[0];
+
+    // If CALLED, check if grace period expired and reconcile
+    if (entry.status === 'CALLED') {
+      entry = await checkAndReconcileSingleEntry(entry);
+    }
+
+    if (entry.status !== 'MISSED') {
+      return res.status(400).json({
+        status: 'error',
+        message: `Only missed tokens can rejoin the queue. Current status: ${entry.status}`,
+      });
+    }
+
+    // Check rejoin limit
+    const maxRejoins = await getSetting('max_rejoins');
+    if ((entry.rejoin_count || 0) >= maxRejoins) {
+      return res.status(400).json({
+        status: 'error',
+        message: `You have reached the maximum number of queue changes for this visit (${maxRejoins}). Please see reception.`,
+      });
+    }
+
+    // Check doctor is active
+    if (entry.doc_status === 'INACTIVE') {
+      return res.status(400).json({ status: 'error', message: 'Assigned doctor is currently inactive. Please reschedule or visit reception.' });
+    }
+
+    await client.query('BEGIN');
+
+    const updateRes = await client.query(
+      `UPDATE queue_entries
+       SET status = 'WAITING',
+           created_at = NOW(),
+           rejoin_count = rejoin_count + 1,
+           called_at = NULL,
+           missed_at = NULL,
+           approaching_notified_at = NULL,
+           turn_notified_at = NULL
+       WHERE id = $1
+       RETURNING *`,
+      [entry.id]
+    );
+
+    await logQueueEvent(client, {
+      queueEntryId: entry.id,
+      eventType: QUEUE_EVENT_TYPES.REJOINED,
+      actorType: 'PATIENT',
+      details: {
+        token: entry.token_number,
+        rejoinCount: updateRes.rows[0].rejoin_count,
+        previousMissedAt: entry.missed_at,
+      },
+    });
+
+    await client.query('COMMIT');
+
+    const updatedEntry = { ...entry, ...updateRes.rows[0] };
+
+    // Broadcast and recompute predictions
+    syncDoctorQueueRealtime(entry.doctor_id, entry.department_id, updatedEntry, 'REJOINED');
+
+    // Compute updated prediction for the patient
+    const prediction = await computeQueuePrediction(updatedEntry);
+
+    res.json({
+      status: 'ok',
+      message: 'You have rejoined the queue at the end',
+      data: {
+        token: updatedEntry.token_number,
+        status: 'WAITING',
+        rejoinCount: updatedEntry.rejoin_count,
+        prediction,
+      },
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Patient rejoin queue error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * GET /api/queue/access/:accessToken/reschedule-options
+ * Public patient endpoint: Returns available doctors/queues today in same department.
+ */
+export async function getPatientRescheduleOptions(req, res) {
+  try {
+    const accessToken = req.params?.accessToken || req.body?.accessToken || req.query?.accessToken;
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+    }
+
+    const entryRes = await pool.query(
+      `SELECT qe.*, dep.name as department_name
+       FROM queue_entries qe
+       JOIN departments dep ON qe.department_id = dep.id
+       WHERE qe.queue_access_token = $1`,
+      [accessToken.trim()]
+    );
+
+    if (entryRes.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+    }
+
+    const entry = entryRes.rows[0];
+    if (!['WAITING', 'MISSED'].includes(entry.status)) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Cannot reschedule from status ${entry.status}`,
+      });
+    }
+
+    const maxReschedules = await getSetting('max_reschedules');
+    if ((entry.reschedule_count || 0) >= maxReschedules) {
+      return res.status(400).json({
+        status: 'error',
+        message: `You have reached the maximum number of reschedules for this visit (${maxReschedules}).`,
+      });
+    }
+
+    // Find all active doctors in this department
+    const allAvailability = await getAllDoctorsTodayAvailability();
+    const availableOptions = allAvailability.filter(d =>
+      d.departmentId === entry.department_id &&
+      d.id !== entry.doctor_id &&
+      d.isAvailable &&
+      !d.isAtCapacity &&
+      d.accountStatus === 'ACTIVE'
+    );
+
+    res.json({
+      status: 'ok',
+      data: {
+        currentDoctorId: entry.doctor_id,
+        departmentName: entry.department_name,
+        rescheduleCount: entry.reschedule_count || 0,
+        maxReschedules,
+        options: availableOptions.map(d => ({
+          doctorId: d.id,
+          name: d.name,
+          specialization: d.specialization,
+          roomNumber: d.roomNumber,
+          patientsWaiting: d.patientsWaiting,
+          estimatedWaitMinutes: Math.max(5, (d.patientsWaiting * 12) + 2),
+        })),
+      },
+    });
+  } catch (err) {
+    console.error('Get reschedule options error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+}
+
+/**
+ * POST /api/queue/access/:accessToken/reschedule
+ * Public patient endpoint: Reschedules patient to an alternative doctor today.
+ */
+export async function patientRescheduleQueue(req, res) {
+  const client = await pool.connect();
+  try {
+    const accessToken = req.params?.accessToken || req.body?.accessToken || req.query?.accessToken;
+    const target_doctor_id = req.body?.target_doctor_id || req.body?.newDoctorId;
+
+    if (!accessToken || typeof accessToken !== 'string' || accessToken.trim().length < 8) {
+      return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+    }
+    if (!target_doctor_id) {
+      return res.status(400).json({ status: 'error', message: 'Target doctor is required' });
+    }
+
+    const entryRes = await client.query(
+      `SELECT qe.*, dep.name as department_name, d.user_id
+       FROM queue_entries qe
+       JOIN departments dep ON qe.department_id = dep.id
+       JOIN doctors d ON qe.doctor_id = d.id
+       WHERE qe.queue_access_token = $1`,
+      [accessToken.trim()]
+    );
+
+    if (entryRes.rows.length === 0) {
+      return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+    }
+
+    const entry = entryRes.rows[0];
+    if (!['WAITING', 'MISSED'].includes(entry.status)) {
+      return res.status(400).json({ status: 'error', message: `Cannot reschedule from status ${entry.status}` });
+    }
+
+    const maxReschedules = await getSetting('max_reschedules');
+    if ((entry.reschedule_count || 0) >= maxReschedules) {
+      return res.status(400).json({
+        status: 'error',
+        message: `You have reached the maximum number of reschedules for this visit (${maxReschedules}).`,
+      });
+    }
+
+    const targetDocId = parseInt(target_doctor_id, 10);
+    if (targetDocId === entry.doctor_id) {
+      return res.status(400).json({ status: 'error', message: 'Target doctor must be different from current doctor' });
+    }
+
+    // Verify target doctor
+    const targetDocRes = await client.query(
+      `SELECT d.*, u.name as doctor_name
+       FROM doctors d JOIN users u ON d.user_id = u.id
+       WHERE d.id = $1 AND d.department_id = $2 AND d.status = 'ACTIVE'`,
+      [targetDocId, entry.department_id]
+    );
+
+    if (targetDocRes.rows.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'Selected doctor is not available in this department' });
+    }
+
+    const targetDoc = targetDocRes.rows[0];
+    const targetAvail = await evaluateDoctorAvailability(targetDoc);
+    if (!targetAvail.isAvailable) {
+      return res.status(400).json({ status: 'error', message: `Target doctor is not currently available: ${targetAvail.reason}` });
+    }
+
+    await client.query('BEGIN');
+
+    const updateRes = await client.query(
+      `UPDATE queue_entries
+       SET doctor_id = $1,
+           created_at = NOW(),
+           status = 'WAITING',
+           reschedule_count = reschedule_count + 1,
+           called_at = NULL,
+           missed_at = NULL,
+           approaching_notified_at = NULL,
+           turn_notified_at = NULL
+       WHERE id = $2
+       RETURNING *`,
+      [targetDocId, entry.id]
+    );
+
+    await logQueueEvent(client, {
+      queueEntryId: entry.id,
+      eventType: QUEUE_EVENT_TYPES.RESCHEDULED,
+      actorType: 'PATIENT',
+      details: {
+        fromDoctorId: entry.doctor_id,
+        toDoctorId: targetDocId,
+        rescheduleCount: updateRes.rows[0].reschedule_count,
+      },
+    });
+
+    await client.query('COMMIT');
+
+    const updated = { ...entry, ...updateRes.rows[0], doctor_name: targetDoc.doctor_name };
+
+    // Emit event and sync both queues
+    emitToPatient(accessToken, SOCKET_EVENTS.PATIENT_RESCHEDULED, {
+      token: updated.token_number,
+      doctor: targetDoc.doctor_name,
+      message: `Your queue has been rescheduled to Dr. ${targetDoc.doctor_name}.`,
+    });
+
+    syncDoctorQueueRealtime(entry.doctor_id, entry.department_id, null, 'RESCHEDULED');
+    syncDoctorQueueRealtime(targetDocId, entry.department_id, updated, 'RESCHEDULED');
+
+    const newPrediction = await computeQueuePrediction(updated);
+
+    res.json({
+      status: 'ok',
+      message: `Rescheduled successfully to Dr. ${targetDoc.doctor_name}`,
+      data: {
+        token: updated.token_number,
+        doctor: targetDoc.doctor_name,
+        doctorId: targetDocId,
+        roomNumber: targetDoc.room_number || 'Room 101',
+        rescheduleCount: updated.reschedule_count,
+        prediction: newPrediction,
+      },
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Patient reschedule error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  } finally {
+    client.release();
   }
 }
 
@@ -648,6 +1103,29 @@ router.post('/token', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Department is inactive' });
     }
 
+    // Doctor operational availability check (Leave, Schedule, Pause)
+    const availability = await evaluateDoctorAvailability(doctorCheck.rows[0]);
+    if (!availability.isAvailable) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Dr. ${doctorCheck.rows[0].doctor_name} is currently unavailable: ${availability.reason}`,
+      });
+    }
+
+    // Queue capacity check
+    const defaultCapacity = await getSetting('default_queue_capacity');
+    const doctorCapacity = doctorCheck.rows[0].daily_capacity || defaultCapacity;
+    const capacityCountRes = await client.query(
+      'SELECT COUNT(*) as count FROM queue_entries WHERE doctor_id = $1 AND queue_date = CURRENT_DATE',
+      [doctor_id]
+    );
+    if (parseInt(capacityCountRes.rows[0].count, 10) >= doctorCapacity) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Dr. ${doctorCheck.rows[0].doctor_name}'s queue has reached its daily capacity of ${doctorCapacity} patients. Please choose another available doctor.`,
+      });
+    }
+
     // Check for duplicate active token for same patient + doctor today
     const duplicateCheck = await client.query(
       `SELECT id FROM queue_entries
@@ -672,6 +1150,14 @@ router.post('/token', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, 'WAITING') RETURNING *`,
       [patient_id, doctor_id, department_id, tokenNumber, queueAccessToken]
     );
+
+    await logQueueEvent(client, {
+      queueEntryId: result.rows[0].id,
+      eventType: QUEUE_EVENT_TYPES.QUEUE_CREATED,
+      actorType: req.user?.role || 'RECEPTIONIST',
+      actorId: req.user?.id || null,
+      details: { token: tokenNumber, doctorId: doctor_id, departmentId: department_id },
+    });
 
     await client.query('COMMIT');
 
@@ -956,6 +1442,9 @@ router.get('/stats', async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'COMPLETED') as completed,
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled,
         COUNT(*) FILTER (WHERE status = 'NO_SHOW') as no_show,
+        COUNT(*) FILTER (WHERE status = 'MISSED') as missed,
+        COALESCE(SUM(rejoin_count), 0) as total_rejoins,
+        COALESCE(SUM(reschedule_count), 0) as total_reschedules,
         COUNT(DISTINCT doctor_id) FILTER (WHERE status IN ('WAITING', 'CALLED', 'IN_CONSULTATION')) as active_virtual_queues
       FROM queue_entries
       WHERE queue_date = $1
@@ -1086,6 +1575,25 @@ async function transitionStatus(req, res, targetStatus, timestampField = null) {
 
     const updatedEntry = fullResult.rows[0];
 
+    // Log queue event in audit trail
+    const eventTypeMap = {
+      CALLED: QUEUE_EVENT_TYPES.CALLED,
+      MISSED: QUEUE_EVENT_TYPES.MISSED,
+      IN_CONSULTATION: QUEUE_EVENT_TYPES.CONSULTATION_STARTED,
+      COMPLETED: QUEUE_EVENT_TYPES.COMPLETED,
+      NO_SHOW: QUEUE_EVENT_TYPES.NO_SHOW,
+      CANCELLED: QUEUE_EVENT_TYPES.CANCELLED,
+    };
+    if (eventTypeMap[targetStatus]) {
+      await logQueueEvent(pool, {
+        queueEntryId: id,
+        eventType: eventTypeMap[targetStatus],
+        actorType: req.user?.role || 'STAFF',
+        actorId: req.user?.id || null,
+        details: { previousStatus: entry.status, newStatus: targetStatus },
+      });
+    }
+
     // Phase 4: Trigger real-time Socket.IO broadcasts & ML updates across connected clients
     syncDoctorQueueRealtime(entry.doctor_id, entry.department_id, updatedEntry, targetStatus);
 
@@ -1175,6 +1683,14 @@ router.post('/:id/complete', authorize('DOCTOR', 'ADMIN'), (req, res) => {
 });
 
 /**
+ * POST /api/queue/:id/missed
+ * Doctor or Admin explicitly marks patient as MISSED (e.g. grace period elapsed).
+ */
+router.post('/:id/missed', authorize('DOCTOR', 'ADMIN'), (req, res) => {
+  transitionStatus(req, res, 'MISSED', 'missed_at');
+});
+
+/**
  * POST /api/queue/:id/no-show
  */
 router.post('/:id/no-show', authorize('DOCTOR', 'ADMIN', 'RECEPTIONIST'), (req, res) => {
@@ -1188,4 +1704,296 @@ router.post('/:id/cancel', authorize('ADMIN', 'RECEPTIONIST'), (req, res) => {
   transitionStatus(req, res, 'CANCELLED');
 });
 
+/**
+ * POST /api/queue/transfer
+ * Admin transfers waiting patients from one doctor to another.
+ * Validates department compatibility, active state, and queue capacity.
+ */
+router.post('/transfer', authorize('ADMIN'), async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { source_doctor_id, target_doctor_id, entry_ids } = req.body;
+
+    if (!source_doctor_id || !target_doctor_id) {
+      return res.status(400).json({ status: 'error', message: 'Source and target doctors are required' });
+    }
+
+    const srcId = parseInt(source_doctor_id, 10);
+    const tgtId = parseInt(target_doctor_id, 10);
+
+    if (srcId === tgtId) {
+      return res.status(400).json({ status: 'error', message: 'Source and target doctor must be different' });
+    }
+
+    // Verify both doctors
+    const docsRes = await client.query(
+      `SELECT d.*, u.name as doctor_name, dep.name as department_name
+       FROM doctors d
+       JOIN users u ON d.user_id = u.id
+       JOIN departments dep ON d.department_id = dep.id
+       WHERE d.id IN ($1, $2)`,
+      [srcId, tgtId]
+    );
+
+    const sourceDoc = docsRes.rows.find(d => d.id === srcId);
+    const targetDoc = docsRes.rows.find(d => d.id === tgtId);
+
+    if (!sourceDoc || !targetDoc) {
+      return res.status(404).json({ status: 'error', message: 'Source or target doctor not found' });
+    }
+
+    // Must be same department
+    if (sourceDoc.department_id !== targetDoc.department_id) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Queue transfers are only permitted between doctors within the same department',
+      });
+    }
+
+    // Target doctor availability & capacity check
+    const targetAvail = await evaluateDoctorAvailability(targetDoc);
+    if (!targetAvail.isAvailable) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Target doctor Dr. ${targetDoc.doctor_name} is unavailable: ${targetAvail.reason}`,
+      });
+    }
+
+    // Find waiting patients to transfer
+    let query = `
+      SELECT qe.*, p.name as patient_name
+      FROM queue_entries qe
+      JOIN patients p ON qe.patient_id = p.id
+      WHERE qe.doctor_id = $1 AND qe.queue_date = CURRENT_DATE
+        AND qe.status IN ('WAITING', 'CALLED', 'MISSED')
+    `;
+    const params = [srcId];
+    if (Array.isArray(entry_ids) && entry_ids.length > 0) {
+      params.push(entry_ids);
+      query += ` AND qe.id = ANY($2)`;
+    }
+    query += ' ORDER BY qe.created_at ASC';
+
+    const patientsRes = await client.query(query, params);
+    if (patientsRes.rows.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'No active waiting patients found to transfer' });
+    }
+
+    // Check target doctor capacity
+    const defaultCapacity = await getSetting('default_queue_capacity');
+    const targetCapacity = targetDoc.daily_capacity || defaultCapacity;
+    const countRes = await client.query(
+      'SELECT COUNT(*) as count FROM queue_entries WHERE doctor_id = $1 AND queue_date = CURRENT_DATE',
+      [tgtId]
+    );
+    const currentTargetCount = parseInt(countRes.rows[0].count, 10);
+    if (currentTargetCount + patientsRes.rows.length > targetCapacity) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Transfer would exceed Dr. ${targetDoc.doctor_name}'s capacity (${currentTargetCount}/${targetCapacity} slots filled, transferring ${patientsRes.rows.length})`,
+      });
+    }
+
+    await client.query('BEGIN');
+
+    const transferredEntries = [];
+    for (const p of patientsRes.rows) {
+      const updRes = await client.query(
+        `UPDATE queue_entries
+         SET doctor_id = $1,
+             transferred_from_doctor_id = $2,
+             transferred_at = NOW(),
+             status = 'WAITING',
+             called_at = NULL,
+             missed_at = NULL,
+             approaching_notified_at = NULL,
+             turn_notified_at = NULL
+         WHERE id = $3
+         RETURNING *`,
+        [tgtId, srcId, p.id]
+      );
+      transferredEntries.push({ ...p, ...updRes.rows[0], doctor_name: targetDoc.doctor_name });
+
+      await logQueueEvent(client, {
+        queueEntryId: p.id,
+        eventType: QUEUE_EVENT_TYPES.QUEUE_TRANSFERRED,
+        actorType: 'ADMIN',
+        actorId: req.user.id,
+        details: {
+          fromDoctorId: srcId,
+          toDoctorId: tgtId,
+          fromDoctorName: sourceDoc.doctor_name,
+          toDoctorName: targetDoc.doctor_name,
+        },
+      });
+    }
+
+    await client.query('COMMIT');
+
+    // Notify transferred patients via individual sockets and broadcast updates
+    for (const tp of transferredEntries) {
+      if (tp.queue_access_token) {
+        emitToPatient(tp.queue_access_token, SOCKET_EVENTS.QUEUE_TRANSFERRED, {
+          token: tp.token_number,
+          doctor: targetDoc.doctor_name,
+          room: targetDoc.room_number || 'Room 101',
+          message: `Your assigned doctor is unavailable. Your queue has been transferred to Dr. ${targetDoc.doctor_name}.`,
+        });
+      }
+    }
+
+    syncDoctorQueueRealtime(srcId, sourceDoc.department_id, null, 'QUEUE_TRANSFERRED');
+    syncDoctorQueueRealtime(tgtId, targetDoc.department_id, null, 'QUEUE_TRANSFERRED');
+
+    res.json({
+      status: 'ok',
+      message: `Successfully transferred ${transferredEntries.length} patient(s) to Dr. ${targetDoc.doctor_name}`,
+      data: {
+        transferredCount: transferredEntries.length,
+        sourceDoctor: sourceDoc.doctor_name,
+        targetDoctor: targetDoc.doctor_name,
+        targetRoom: targetDoc.room_number || 'Room 101',
+      },
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Queue transfer error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+/**
+ * POST /api/queue/doctor/:id/pause
+ * Doctor or Admin pauses doctor queue.
+ */
+router.post('/doctor/:id/pause', authorize('DOCTOR', 'ADMIN'), async (req, res) => {
+  try {
+    const doctorId = parseInt(req.params.id, 10);
+    const { reason } = req.body;
+
+    // Doctor can only pause own queue
+    if (req.user.role === 'DOCTOR') {
+      const docRes = await pool.query('SELECT id FROM doctors WHERE user_id = $1', [req.user.id]);
+      if (docRes.rows.length === 0 || docRes.rows[0].id !== doctorId) {
+        return res.status(403).json({ status: 'error', message: 'You can only pause your own queue' });
+      }
+    }
+
+    const doctor = await pauseDoctorQueue(doctorId, reason || 'Doctor temporarily stepped out', req.user);
+
+    await logQueueEvent(pool, {
+      queueEntryId: doctorId, // doctor context
+      eventType: QUEUE_EVENT_TYPES.QUEUE_PAUSED,
+      actorType: req.user.role,
+      actorId: req.user.id,
+      details: { doctorId, reason: doctor.pause_reason },
+    });
+
+    syncDoctorQueueRealtime(doctorId, doctor.department_id, null, 'QUEUE_PAUSED');
+
+    res.json({
+      status: 'ok',
+      message: `Queue paused for Dr. ${doctor.name || doctorId}`,
+      data: doctor,
+    });
+  } catch (err) {
+    console.error('Pause doctor queue error:', err);
+    res.status(500).json({ status: 'error', message: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/queue/doctor/:id/resume
+ * Doctor or Admin resumes paused doctor queue.
+ */
+router.post('/doctor/:id/resume', authorize('DOCTOR', 'ADMIN'), async (req, res) => {
+  try {
+    const doctorId = parseInt(req.params.id, 10);
+
+    // Doctor can only resume own queue
+    if (req.user.role === 'DOCTOR') {
+      const docRes = await pool.query('SELECT id FROM doctors WHERE user_id = $1', [req.user.id]);
+      if (docRes.rows.length === 0 || docRes.rows[0].id !== doctorId) {
+        return res.status(403).json({ status: 'error', message: 'You can only resume your own queue' });
+      }
+    }
+
+    const doctor = await resumeDoctorQueue(doctorId, req.user);
+
+    await logQueueEvent(pool, {
+      queueEntryId: doctorId,
+      eventType: QUEUE_EVENT_TYPES.QUEUE_RESUMED,
+      actorType: req.user.role,
+      actorId: req.user.id,
+      details: { doctorId },
+    });
+
+    syncDoctorQueueRealtime(doctorId, doctor.department_id, null, 'QUEUE_RESUMED');
+
+    res.json({
+      status: 'ok',
+      message: `Queue resumed for Dr. ${doctor.name || doctorId}`,
+      data: doctor,
+    });
+  } catch (err) {
+    console.error('Resume doctor queue error:', err);
+    res.status(500).json({ status: 'error', message: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/queue/settings
+ * Admin retrieves system settings (grace period, limits, capacity).
+ */
+router.get('/settings', authorize('ADMIN'), async (req, res) => {
+  try {
+    const settings = await getAllSettings();
+    res.json({ status: 'ok', data: settings });
+  } catch (err) {
+    console.error('Get settings error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/queue/settings
+ * Admin updates system settings with validation.
+ */
+router.put('/settings', authorize('ADMIN'), async (req, res) => {
+  try {
+    const updated = await updateSettings(req.body, req.user.id);
+    res.json({ status: 'ok', message: 'System settings updated successfully', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
+});
+
+/**
+ * GET /api/queue/events
+ * Admin & Receptionist view recent queue events / audit log.
+ */
+router.get('/events', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
+  try {
+    const { queue_entry_id, limit, offset } = req.query;
+    const events = await getQueueEvents({
+      queueEntryId: queue_entry_id ? parseInt(queue_entry_id, 10) : null,
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+    });
+    res.json({ status: 'ok', data: events });
+  } catch (err) {
+    console.error('Get queue events error:', err);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+});
+
+// Mount public patient actions directly onto router for completeness
+router.post('/access/:accessToken/cancel', patientCancelQueue);
+router.post('/access/:accessToken/rejoin', patientRejoinQueue);
+router.get('/access/:accessToken/reschedule-options', getPatientRescheduleOptions);
+router.post('/access/:accessToken/reschedule', patientRescheduleQueue);
+
 export default router;
+

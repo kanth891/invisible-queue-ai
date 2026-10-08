@@ -40,11 +40,14 @@ Invisible Queue AI decouples physical presence from queue position:
 ## Key Features
 
 - **Decentralized Outpatient Tracking**: Mobile-first digital pass accessible via 128-bit cryptographic tokens with zero sensitive patient PII exposed on public routes.
-- **Machine Learning Wait Estimation**: Gradient Boosting Regressor model evaluated across 10 temporal and clinical features, delivering bounded confidence intervals (e.g., `18–25 min`).
+- **Machine Learning Wait Estimation**: Gradient Boosting Regressor model evaluated across 10 temporal and clinical features, delivering bounded confidence intervals (e.g., `18-25 min`).
 - **Real-Time Synchronization**: Bi-directional Socket.IO architecture with room isolation (`patient:{token}`, `doctor:{id}`, `admin`) and automatic REST fallback upon reconnection.
-- **Idempotent Notification Engine**: Web Notification API and in-app toasts with client and server timestamp deduplication, preventing notification spam.
-- **Strict Clinical State Machine**: Server-side transition validation enforcing legal workflow sequences (`WAITING -> CALLED -> IN_CONSULTATION -> COMPLETED / NO_SHOW / CANCELLED`).
-- **Real Operational Telemetry**: Automated calculation of actual waiting minutes, consultation duration, and prediction error stored for continuous retraining.
+- **Missed Token vs. No-Show Management**: Authoritative background worker with configurable grace period (default 5 minutes). Patient self-service rejoin automatically appends to the queue tail with rejoin attempt limits (default 2).
+- **Patient Queue Self-Service**: Full patient control with confirmation to cancel their pass or reschedule same-day to available physicians within the same medical department.
+- **Doctor Availability and Schedules**: Multi-tier availability resolution separating account identity from operational status (`AVAILABLE`, `PAUSED`, `ON_LEAVE`, `INACTIVE`), with weekly recurring schedules and date-specific clinical leaves.
+- **Emergency Queue Transfer**: Instant bulk transfer of active waiting patients between doctors in the same department during physician emergencies, with capacity validation and real-time client updates.
+- **Clinical Governance and Audit Trails**: System policy configuration (`system_settings`) and complete queue audit trail (`queue_events`) tracking actor, timestamps, and state transitions.
+- **Strict Clinical State Machine**: Server-side transition validation enforcing legal workflow sequences (`WAITING -> CALLED -> IN_CONSULTATION -> COMPLETED / NO_SHOW / MISSED / CANCELLED`).
 - **Fully Responsive Clinical Design System**: Validated across 18 viewports (320px mobile to 1920px desktop) with minimum 44px touch targets and clinical typography.
 
 ---
@@ -101,6 +104,49 @@ Invisible Queue AI decouples physical presence from queue position:
                ▼
 [ Telemetry Logged to Database ] ────────► Admin Dashboard Analytics Updated in Real Time
 ```
+
+---
+
+## Advanced Queue Operations, Patient Controls, and Doctor Availability
+
+The platform features an enterprise-grade hospital workflow addressing real outpatient operational disruptions:
+
+### 1. Missed Token vs. No-Show Management
+- **Grace Period Monitoring**: When a doctor calls a patient, a grace period countdown begins (configurable, default: 5 minutes). Both the doctor console and patient pass display live countdowns.
+- **Backend-Authoritative Worker**: An active background reconciler (`missedTokenReconciler.js`, running every 15s) and on-demand entry reconciliation automatically transition tokens from `CALLED` to `MISSED` upon grace period expiration.
+- **Patient Self-Service Rejoin**: Missed patients can rejoin their queue with a single tap. Rejoining appends the patient to the tail of the current queue (`WAITING`), resets timestamps, increments `rejoin_count`, and recomputes dynamic wait times.
+- **Rejoin Limits**: Hospital policy caps rejoin attempts (default: 2 per visit). Exceeding this directs the patient to the reception desk.
+- **No-Show Distinction**: Receptionists and doctors can definitively mark abandoned visits as `NO_SHOW`, which cannot rejoin.
+
+### 2. Patient Queue Control
+- **Cancel Queue Entry**: Patients can voluntarily cancel their active queue token from their mobile pass with confirmation, immediately freeing queue capacity for others.
+- **Same-Day Rescheduling**: Patients waiting or missed can browse active, available doctors in the same department. Upon selecting an alternative physician, the token is reassigned, `reschedule_count` is incremented (enforcing limit, default 2), and predictions update across both doctors' queues.
+- **Data Privacy**: All patient self-service actions authenticate via the 128-bit cryptographic access token, ensuring zero access to other patient records.
+
+### 3. Doctor Availability Management
+- **Identity vs. Operational Status**: Separates long-term staff status (`ACTIVE` / `INACTIVE`) from real-time clinical availability:
+  - `AVAILABLE`: Consulting patients normally.
+  - `PAUSED`: Queue temporarily held for clinical rounds or breaks. New patients cannot be queued.
+  - `ON_LEAVE`: Scheduled clinical or personal leave. Excluded from intake.
+  - `INACTIVE`: Staff member disabled.
+- **Weekly Working Schedules**: Recurring consultation days and hours per doctor (`doctor_schedules`).
+- **Doctor Leave Calendar**: Date-specific full-day and partial-day clinical leaves (`doctor_leaves`).
+- **Queue Pause and Resume**: Doctors or administrators can pause and resume active queues with clinical notes (e.g. "ICU Ward Round"). Existing waiting patients see a paused notification banner with their retained queue position.
+- **Daily Intake Capacity**: Configurable daily consultation limit per doctor. Receptionists receive real-time warnings when capacity is reached.
+
+### 4. Emergency Queue Transfer
+- **Bulk Queue Reassignment**: Administrators can reassign active waiting patients from one doctor to another in the same department during emergencies.
+- **Safety Validations**: Enforces department compatibility, physician active status, and intake capacity.
+- **Telemetry Preservation**: Completed and called tokens remain associated with the original physician. Waiting tokens are moved with `transferred_from_doctor_id` recorded.
+
+### 5. Hospital Policy Configuration and Audit Trail
+- **System Settings (`system_settings`)**: Dynamic hospital policy parameters configurable via Admin Console:
+  - `missed_token_grace_period_minutes`
+  - `max_rejoin_attempts`
+  - `max_reschedule_attempts`
+  - `daily_queue_capacity`
+  - `hospital_operating_hours`
+- **Queue Audit Trail (`queue_events`)**: Comprehensive audit log recording `queue_entry_id`, `token_number`, `event_type` (`TOKEN_CREATED`, `CALLED`, `PATIENT_MISSED`, `PATIENT_REJOINED`, `PATIENT_RESCHEDULED`, `QUEUE_TRANSFERRED`, `QUEUE_PAUSED`, `QUEUE_RESUMED`, `CANCELLED`), actor type, actor ID, and metadata.
 
 ---
 
@@ -631,7 +677,7 @@ Execute all automated verification suites:
 cd backend
 npm test
 ```
-*Executes all 7 automated test suites covering Phase 2 cryptographic security, Phase 3 prediction algorithms, Phase 4 state machine validation, API endpoints, multi-client real-time synchronization, complete multi-role simulations, and hierarchical Bayesian cold-start specialty prior testing.*
+*Executes all 8 automated test suites covering Phase 2 cryptographic security, Phase 3 prediction algorithms, Phase 4 state machine validation, API endpoints, multi-client real-time synchronization, complete multi-role simulations, hierarchical Bayesian cold-start specialty prior testing, and the full Advanced Queue Operations, Patient Controls & Doctor Availability test suite.*
 
 ### 2. Machine Learning Unit Tests
 ```bash
@@ -736,6 +782,7 @@ This system was conceived and engineered as a **B.Tech Computer Science & Engine
 | Phase 3 | AI Waiting-Time Prediction (Gradient Boosting) | Completed |
 | Phase 4 | Real-Time Synchronization, Notifications & Analytics | Completed |
 | Final Polish | Premium Healthcare UI/UX & Responsive QA Pass | Completed |
+| Advanced Operations | Advanced Queue Operations, Patient Rescheduling, Doctor Availability | Completed |
 
 ---
 

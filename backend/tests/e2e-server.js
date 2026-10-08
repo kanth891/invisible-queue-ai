@@ -33,8 +33,9 @@ const db = {
     { id: 5, name: 'Dermatology', code: 'DERM', description: 'Skin, hair, and dermatological reviews', status: 'ACTIVE' },
   ],
   doctors: [
-    { id: 1, user_id: 3, department_id: 1, name: 'Dr. Ravi Kumar', specialization: 'General Physician', status: 'ACTIVE' },
-    { id: 2, user_id: 4, department_id: 4, name: 'Dr. Meera Nambiar', specialization: 'Medical Oncologist', status: 'ACTIVE' }
+    { id: 1, user_id: 3, department_id: 1, name: 'Dr. Ravi Kumar', specialization: 'General Physician', room_number: 'Room 101', operational_status: 'AVAILABLE', daily_capacity: 30, pause_reason: null, paused_at: null, status: 'ACTIVE' },
+    { id: 2, user_id: 4, department_id: 4, name: 'Dr. Meera Nambiar', specialization: 'Medical Oncologist', room_number: 'Room 205', operational_status: 'AVAILABLE', daily_capacity: 30, pause_reason: null, paused_at: null, status: 'ACTIVE' },
+    { id: 3, user_id: 1, department_id: 1, name: 'Dr. Priya Sharma', specialization: 'General Physician', room_number: 'Room 102', operational_status: 'AVAILABLE', daily_capacity: 30, pause_reason: null, paused_at: null, status: 'ACTIVE' },
   ],
   patients: [
     { id: 1, name: 'Rahul Verma', age: 28, gender: 'MALE', phone: '9876543210' },
@@ -60,6 +61,11 @@ const db = {
       prediction_error_minutes: null,
       approaching_notified_at: new Date(),
       turn_notified_at: new Date(),
+      missed_at: null,
+      rejoin_count: 0,
+      reschedule_count: 0,
+      transferred_from_doctor_id: null,
+      transferred_at: null,
     },
     {
       id: 2,
@@ -79,16 +85,32 @@ const db = {
       prediction_error_minutes: null,
       approaching_notified_at: null,
       turn_notified_at: null,
+      missed_at: null,
+      rejoin_count: 0,
+      reschedule_count: 0,
+      transferred_from_doctor_id: null,
+      transferred_at: null,
     }
   ],
-  predictions: []
+  predictions: [],
+  system_settings: {
+    missed_token_grace_period_minutes: 5,
+    max_rejoin_attempts: 2,
+    max_reschedule_attempts: 2,
+    daily_queue_capacity: 30,
+    hospital_operating_hours: { open: '08:00', close: '18:00' },
+  },
+  doctor_schedules: [],
+  doctor_leaves: [],
+  queue_events: []
 };
 
 // ── State Machine Transition Constraints ──────────
 const VALID_TRANSITIONS = {
   WAITING:          ['CALLED', 'CANCELLED', 'NO_SHOW'],
-  CALLED:           ['IN_CONSULTATION', 'NO_SHOW'],
+  CALLED:           ['IN_CONSULTATION', 'NO_SHOW', 'MISSED'],
   IN_CONSULTATION:  ['COMPLETED'],
+  MISSED:           ['WAITING', 'CANCELLED', 'NO_SHOW'],
   COMPLETED:        [],
   CANCELLED:        [],
   NO_SHOW:          [],
@@ -393,6 +415,27 @@ app.get('/api/queue/access/:accessToken', async (req, res) => {
   const doctor = db.doctors.find(d => d.id === entry.doctor_id);
   const dept = db.departments.find(d => d.id === entry.department_id);
 
+  // Backend-authoritative missed-token check on access
+  const graceMinutes = db.system_settings?.missed_token_grace_period_minutes || 5;
+  if (entry.status === 'CALLED' && entry.called_at) {
+    const elapsedMinutes = (Date.now() - new Date(entry.called_at).getTime()) / 60000;
+    if (elapsedMinutes >= graceMinutes) {
+      entry.status = 'MISSED';
+      entry.missed_at = new Date();
+      db.queue_events.push({
+        id: db.queue_events.length + 1,
+        queue_entry_id: entry.id,
+        token_number: entry.token_number,
+        event_type: 'PATIENT_MISSED',
+        actor_type: 'SYSTEM',
+        details: { token: entry.token_number, graceMinutes },
+        notes: `Grace period expired (${graceMinutes}m)`,
+        created_at: new Date()
+      });
+      syncRealtimeQueueE2E(entry.doctor_id, entry.department_id, entry, 'MISSED');
+    }
+  }
+
   const activeEntries = db.queue_entries
     .filter(q => q.doctor_id === entry.doctor_id && q.queue_date === entry.queue_date && ['IN_CONSULTATION', 'CALLED', 'WAITING'].includes(q.status))
     .sort((a, b) => {
@@ -413,12 +456,23 @@ app.get('/api/queue/access/:accessToken', async (req, res) => {
 
   const prediction = await computePredictionE2E(entry, activeEntries);
 
+  const maxRejoins = db.system_settings?.max_rejoin_attempts || 2;
+  const maxReschedules = db.system_settings?.max_reschedule_attempts || 2;
+  const graceDeadline = entry.called_at
+    ? new Date(new Date(entry.called_at).getTime() + graceMinutes * 60000).toISOString()
+    : null;
+  const transferredFromDoc = entry.transferred_from_doctor_id
+    ? db.doctors.find(d => d.id === entry.transferred_from_doctor_id)?.name
+    : null;
+
   res.json({
     status: 'ok',
     data: {
       token: entry.token_number,
       doctor: doctor?.name || 'Assigned Doctor',
+      doctorId: entry.doctor_id,
       department: dept?.name || 'Department',
+      departmentId: entry.department_id,
       status: entry.status,
       currentToken,
       position,
@@ -427,9 +481,239 @@ app.get('/api/queue/access/:accessToken', async (req, res) => {
       approachingThreshold: APPROACHING_THRESHOLD,
       queueDate: entry.queue_date,
       prediction,
+      calledAt: entry.called_at,
+      missedAt: entry.missed_at,
+      gracePeriodMinutes: graceMinutes,
+      graceDeadline,
+      rejoinCount: entry.rejoin_count || 0,
+      maxRejoins,
+      rescheduleCount: entry.reschedule_count || 0,
+      maxReschedules,
+      doctorOperationalStatus: doctor?.operational_status || 'AVAILABLE',
+      doctorPauseReason: doctor?.pause_reason || null,
+      doctorPausedAt: doctor?.paused_at || null,
+      roomNumber: doctor?.room_number || 'Room 101',
+      transferredAt: entry.transferred_at || null,
+      transferredFromDoctorName: transferredFromDoc,
     }
   });
 });
+
+// Helper: Patient cancel handler
+const handlePatientCancel = (req, res) => {
+  const tokenStr = req.params.accessToken || req.body?.accessToken || req.query?.accessToken;
+  if (!tokenStr || tokenStr.trim().length < 8) {
+    return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+  }
+  const entry = db.queue_entries.find(q => q.queue_access_token === tokenStr.trim());
+  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+  if (['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(entry.status)) {
+    return res.status(400).json({ status: 'error', message: `Cannot cancel queue entry with status ${entry.status}` });
+  }
+  if (entry.status === 'IN_CONSULTATION') {
+    return res.status(400).json({ status: 'error', message: 'Cannot cancel consultation already in progress' });
+  }
+
+  entry.status = 'CANCELLED';
+  db.queue_events.push({
+    id: db.queue_events.length + 1,
+    queue_entry_id: entry.id,
+    token_number: entry.token_number,
+    event_type: 'CANCELLED',
+    actor_type: 'PATIENT',
+    details: { reason: req.body?.reason || 'Patient cancelled' },
+    created_at: new Date()
+  });
+  syncRealtimeQueueE2E(entry.doctor_id, entry.department_id, entry, 'CANCELLED');
+  res.json({ status: 'ok', message: 'Queue entry cancelled successfully', data: { token: entry.token_number, status: 'CANCELLED' } });
+};
+
+app.post('/api/queue/patient/cancel', handlePatientCancel);
+app.post('/api/queue/access/:accessToken/cancel', handlePatientCancel);
+
+// Helper: Patient rejoin handler
+const handlePatientRejoin = async (req, res) => {
+  const tokenStr = req.params.accessToken || req.body?.accessToken || req.query?.accessToken;
+  if (!tokenStr || tokenStr.trim().length < 8) {
+    return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+  }
+  const entry = db.queue_entries.find(q => q.queue_access_token === tokenStr.trim());
+  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+
+  // If called and past grace period, auto-reconcile
+  const graceMinutes = db.system_settings?.missed_token_grace_period_minutes || 5;
+  if (entry.status === 'CALLED' && entry.called_at) {
+    const elapsedMinutes = (Date.now() - new Date(entry.called_at).getTime()) / 60000;
+    if (elapsedMinutes >= graceMinutes) {
+      entry.status = 'MISSED';
+      entry.missed_at = new Date();
+    }
+  }
+
+  if (entry.status !== 'MISSED') {
+    return res.status(400).json({ status: 'error', message: `Only missed tokens can rejoin the queue. Current status: ${entry.status}` });
+  }
+
+  const maxRejoins = db.system_settings?.max_rejoin_attempts || 2;
+  if ((entry.rejoin_count || 0) >= maxRejoins) {
+    return res.status(400).json({ status: 'error', message: `You have reached the maximum number of queue changes for this visit (${maxRejoins}). Please see reception.` });
+  }
+
+  entry.status = 'WAITING';
+  entry.created_at = new Date(); // Places patient at end of queue
+  entry.called_at = null;
+  entry.missed_at = null;
+  entry.rejoin_count = (entry.rejoin_count || 0) + 1;
+  entry.approaching_notified_at = null;
+  entry.turn_notified_at = null;
+
+  db.queue_events.push({
+    id: db.queue_events.length + 1,
+    queue_entry_id: entry.id,
+    token_number: entry.token_number,
+    event_type: 'PATIENT_REJOINED',
+    actor_type: 'PATIENT',
+    details: { token: entry.token_number, rejoinCount: entry.rejoin_count },
+    created_at: new Date()
+  });
+
+  syncRealtimeQueueE2E(entry.doctor_id, entry.department_id, entry, 'REJOINED');
+  const prediction = await computePredictionE2E(entry, db.queue_entries.filter(q => q.doctor_id === entry.doctor_id && ['WAITING', 'CALLED', 'IN_CONSULTATION'].includes(q.status)));
+
+  res.json({
+    status: 'ok',
+    message: 'You have rejoined the queue at the end',
+    data: {
+      token: entry.token_number,
+      status: 'WAITING',
+      rejoinCount: entry.rejoin_count,
+      prediction,
+    }
+  });
+};
+
+app.post('/api/queue/patient/rejoin', handlePatientRejoin);
+app.post('/api/queue/access/:accessToken/rejoin', handlePatientRejoin);
+
+// Helper: Patient reschedule options handler
+const handleRescheduleOptions = (req, res) => {
+  const tokenStr = req.params.accessToken || req.body?.accessToken || req.query?.accessToken;
+  if (!tokenStr || tokenStr.trim().length < 8) {
+    return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+  }
+  const entry = db.queue_entries.find(q => q.queue_access_token === tokenStr.trim());
+  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+  if (!['WAITING', 'MISSED'].includes(entry.status)) {
+    return res.status(400).json({ status: 'error', message: `Cannot reschedule from status ${entry.status}` });
+  }
+
+  const maxReschedules = db.system_settings?.max_reschedule_attempts || 2;
+  if ((entry.reschedule_count || 0) >= maxReschedules) {
+    return res.status(400).json({ status: 'error', message: `You have reached the maximum number of reschedules for this visit (${maxReschedules}).` });
+  }
+
+  const dept = db.departments.find(d => d.id === entry.department_id);
+  const eligibleDoctors = db.doctors.filter(d =>
+    d.department_id === entry.department_id &&
+    d.id !== entry.doctor_id &&
+    d.status === 'ACTIVE' &&
+    d.operational_status === 'AVAILABLE' &&
+    !db.doctor_leaves.some(l => l.doctor_id === d.id && l.leave_date === new Date().toISOString().split('T')[0])
+  );
+
+  const options = eligibleDoctors.map(d => {
+    const waitingCount = db.queue_entries.filter(q => q.doctor_id === d.id && q.status === 'WAITING').length;
+    return {
+      doctorId: d.id,
+      name: d.name,
+      specialization: d.specialization,
+      roomNumber: d.room_number || 'Room 101',
+      patientsWaiting: waitingCount,
+      estimatedWaitMinutes: Math.max(5, (waitingCount * 12) + 2)
+    };
+  });
+
+  res.json({
+    status: 'ok',
+    data: {
+      currentDoctorId: entry.doctor_id,
+      departmentName: dept?.name || 'Department',
+      rescheduleCount: entry.reschedule_count || 0,
+      maxReschedules,
+      options,
+    }
+  });
+};
+
+app.get('/api/queue/patient/reschedule-options', handleRescheduleOptions);
+app.get('/api/queue/access/:accessToken/reschedule-options', handleRescheduleOptions);
+
+// Helper: Patient reschedule handler
+const handlePatientReschedule = async (req, res) => {
+  const tokenStr = req.params.accessToken || req.body?.accessToken || req.query?.accessToken;
+  const targetDoctorId = parseInt(req.body?.target_doctor_id || req.body?.newDoctorId, 10);
+
+  if (!tokenStr || tokenStr.trim().length < 8) {
+    return res.status(400).json({ status: 'error', message: 'Invalid access token format' });
+  }
+  if (!targetDoctorId) {
+    return res.status(400).json({ status: 'error', message: 'Target doctor is required' });
+  }
+
+  const entry = db.queue_entries.find(q => q.queue_access_token === tokenStr.trim());
+  if (!entry) return res.status(404).json({ status: 'error', message: 'Queue entry not found' });
+  if (!['WAITING', 'MISSED'].includes(entry.status)) {
+    return res.status(400).json({ status: 'error', message: `Cannot reschedule from status ${entry.status}` });
+  }
+
+  const maxReschedules = db.system_settings?.max_reschedule_attempts || 2;
+  if ((entry.reschedule_count || 0) >= maxReschedules) {
+    return res.status(400).json({ status: 'error', message: `Maximum reschedules exceeded (${maxReschedules}).` });
+  }
+
+  const targetDoc = db.doctors.find(d => d.id === targetDoctorId);
+  if (!targetDoc || targetDoc.department_id !== entry.department_id || targetDoc.status !== 'ACTIVE') {
+    return res.status(400).json({ status: 'error', message: 'Selected doctor is not available in this department.' });
+  }
+
+  const prevDocId = entry.doctor_id;
+  entry.doctor_id = targetDoctorId;
+  entry.status = 'WAITING';
+  entry.created_at = new Date();
+  entry.called_at = null;
+  entry.missed_at = null;
+  entry.reschedule_count = (entry.reschedule_count || 0) + 1;
+  entry.approaching_notified_at = null;
+  entry.turn_notified_at = null;
+
+  db.queue_events.push({
+    id: db.queue_events.length + 1,
+    queue_entry_id: entry.id,
+    token_number: entry.token_number,
+    event_type: 'PATIENT_RESCHEDULED',
+    actor_type: 'PATIENT',
+    details: { token: entry.token_number, fromDoctorId: prevDocId, toDoctorId: targetDoctorId, rescheduleCount: entry.reschedule_count },
+    created_at: new Date()
+  });
+
+  syncRealtimeQueueE2E(prevDocId, entry.department_id, entry, 'RESCHEDULED');
+  syncRealtimeQueueE2E(targetDoctorId, entry.department_id, entry, 'RESCHEDULED');
+
+  res.json({
+    status: 'ok',
+    message: `Rescheduled to Dr. ${targetDoc.name}`,
+    data: {
+      token: entry.token_number,
+      newDoctor: targetDoc.name,
+      roomNumber: targetDoc.room_number,
+      status: 'WAITING',
+      rescheduleCount: entry.reschedule_count,
+    }
+  });
+};
+
+app.post('/api/queue/patient/reschedule', handlePatientReschedule);
+app.post('/api/queue/access/:accessToken/reschedule', handlePatientReschedule);
 
 app.get('/api/queue/access/:accessToken/prediction', async (req, res) => {
   const { accessToken } = req.params;
@@ -442,7 +726,216 @@ app.get('/api/queue/access/:accessToken/prediction', async (req, res) => {
 
 // ── Departments & Doctors ─────────────────────────
 app.get('/api/departments', (req, res) => res.json({ status: 'ok', data: db.departments }));
+
+app.get('/api/doctors/availability/today', authMiddleware, (req, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  const list = db.doctors.map(d => {
+    const isLeave = db.doctor_leaves.some(l => l.doctor_id === d.id && l.leave_date === today);
+    const waitingCount = db.queue_entries.filter(q => q.doctor_id === d.id && q.status === 'WAITING').length;
+    const capacity = d.daily_capacity || db.system_settings.daily_queue_capacity || 30;
+    let computed_availability = 'AVAILABLE';
+    if (d.status === 'INACTIVE') computed_availability = 'INACTIVE';
+    else if (isLeave) computed_availability = 'ON_LEAVE';
+    else if (d.operational_status === 'PAUSED') computed_availability = 'PAUSED';
+
+    const dept = db.departments.find(dp => dp.id === d.department_id);
+    return {
+      id: d.id,
+      name: d.name,
+      department_id: d.department_id,
+      departmentId: d.department_id,
+      department_name: dept?.name || '',
+      departmentName: dept?.name || '',
+      specialization: d.specialization,
+      room_number: d.room_number || 'Room 101',
+      roomNumber: d.room_number || 'Room 101',
+      operational_status: d.operational_status || 'AVAILABLE',
+      operationalStatus: d.operational_status || 'AVAILABLE',
+      computed_availability,
+      computedAvailability: computed_availability,
+      isAvailable: computed_availability === 'AVAILABLE',
+      accountStatus: d.status,
+      waiting_count: waitingCount,
+      waitingCount,
+      daily_capacity: capacity,
+      dailyCapacity: capacity,
+      isAtCapacity: waitingCount >= capacity,
+      capacityReached: waitingCount >= capacity,
+      on_leave_today: isLeave,
+      is_working_today: !isLeave,
+      pause_reason: d.pause_reason,
+      paused_at: d.paused_at,
+    };
+  });
+  res.json({ status: 'ok', data: list });
+});
+
 app.get('/api/doctors', (req, res) => res.json({ status: 'ok', data: db.doctors }));
+
+app.post('/api/doctors', authMiddleware, (req, res) => {
+  const { name, email, department_id, specialization, room_number, daily_capacity } = req.body;
+  const newDoc = {
+    id: db.doctors.length + 1,
+    user_id: db.users.length + 1,
+    department_id: parseInt(department_id, 10),
+    name,
+    specialization: specialization || 'General Physician',
+    room_number: room_number || 'Room 101',
+    operational_status: 'AVAILABLE',
+    daily_capacity: parseInt(daily_capacity, 10) || 30,
+    pause_reason: null,
+    paused_at: null,
+    status: 'ACTIVE'
+  };
+  db.doctors.push(newDoc);
+  res.status(201).json({ status: 'ok', data: newDoc });
+});
+
+app.put('/api/doctors/:id', authMiddleware, (req, res) => {
+  const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
+  if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
+  const { name, department_id, specialization, room_number, daily_capacity } = req.body;
+  if (name) doc.name = name;
+  if (department_id) doc.department_id = parseInt(department_id, 10);
+  if (specialization) doc.specialization = specialization;
+  if (room_number) doc.room_number = room_number;
+  if (daily_capacity) doc.daily_capacity = parseInt(daily_capacity, 10);
+  res.json({ status: 'ok', data: doc });
+});
+
+app.patch('/api/doctors/:id/status', authMiddleware, (req, res) => {
+  const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
+  if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
+  doc.status = req.body.status || (doc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE');
+  res.json({ status: 'ok', data: doc });
+});
+
+// Pause / Resume routes
+const handleDoctorPause = (req, res) => {
+  const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
+  if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
+  doc.operational_status = 'PAUSED';
+  doc.pause_reason = req.body.reason || 'Duty break';
+  doc.paused_at = new Date();
+  io.emit('queue.paused', { doctorId: doc.id, reason: doc.pause_reason });
+  io.emit('doctor.availability_changed', { doctorId: doc.id, operationalStatus: 'PAUSED' });
+  res.json({ status: 'ok', message: `Queue paused for Dr. ${doc.name}`, data: doc });
+};
+const handleDoctorResume = (req, res) => {
+  const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
+  if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
+  doc.operational_status = 'AVAILABLE';
+  doc.pause_reason = null;
+  doc.paused_at = null;
+  io.emit('queue.resumed', { doctorId: doc.id });
+  io.emit('doctor.availability_changed', { doctorId: doc.id, operationalStatus: 'AVAILABLE' });
+  res.json({ status: 'ok', message: `Queue resumed for Dr. ${doc.name}`, data: doc });
+};
+
+app.post('/api/doctors/:id/pause', authMiddleware, handleDoctorPause);
+app.post('/api/queue/doctor/:id/pause', authMiddleware, handleDoctorPause);
+app.post('/api/doctors/:id/resume', authMiddleware, handleDoctorResume);
+app.post('/api/queue/doctor/:id/resume', authMiddleware, handleDoctorResume);
+
+// Doctor schedules
+app.get('/api/doctors/:id/schedule', authMiddleware, (req, res) => {
+  const docId = parseInt(req.params.id, 10);
+  const sched = db.doctor_schedules.filter(s => s.doctor_id === docId);
+  res.json({ status: 'ok', data: sched });
+});
+app.put('/api/doctors/:id/schedule', authMiddleware, (req, res) => {
+  const docId = parseInt(req.params.id, 10);
+  const items = req.body.schedule || req.body || [];
+  db.doctor_schedules = db.doctor_schedules.filter(s => s.doctor_id !== docId);
+  (Array.isArray(items) ? items : []).forEach(item => {
+    db.doctor_schedules.push({ ...item, doctor_id: docId, id: db.doctor_schedules.length + 1 });
+  });
+  res.json({ status: 'ok', message: 'Schedule updated', data: db.doctor_schedules.filter(s => s.doctor_id === docId) });
+});
+
+// Doctor leaves
+app.get('/api/doctors/:id/leave', authMiddleware, (req, res) => {
+  const docId = parseInt(req.params.id, 10);
+  const leaves = db.doctor_leaves.filter(l => l.doctor_id === docId);
+  res.json({ status: 'ok', data: leaves });
+});
+app.post('/api/doctors/:id/leave', authMiddleware, (req, res) => {
+  const docId = parseInt(req.params.id, 10);
+  const { leave_date, is_full_day, start_time, end_time, reason } = req.body;
+  const newLeave = {
+    id: db.doctor_leaves.length + 1,
+    doctor_id: docId,
+    leave_date,
+    is_full_day: is_full_day !== false,
+    start_time: start_time || null,
+    end_time: end_time || null,
+    reason: reason || 'Leave',
+    created_at: new Date()
+  };
+  db.doctor_leaves.push(newLeave);
+  io.emit('doctor.availability_changed', { doctorId: docId });
+  res.status(201).json({ status: 'ok', message: 'Leave recorded', data: newLeave });
+});
+app.delete('/api/doctors/:id/leave/:leaveId', authMiddleware, (req, res) => {
+  const leaveId = parseInt(req.params.leaveId, 10);
+  db.doctor_leaves = db.doctor_leaves.filter(l => l.id !== leaveId);
+  res.json({ status: 'ok', message: 'Leave removed' });
+});
+
+// Queue Transfer
+app.post('/api/queue/transfer', authMiddleware, (req, res) => {
+  const fromDocId = parseInt(req.body.fromDoctorId || req.body.from_doctor_id, 10);
+  const toDocId = parseInt(req.body.toDoctorId || req.body.to_doctor_id, 10);
+  const reason = req.body.reason || 'Physician unavailable';
+
+  const fromDoc = db.doctors.find(d => d.id === fromDocId);
+  const toDoc = db.doctors.find(d => d.id === toDocId);
+  if (!fromDoc || !toDoc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
+  if (fromDoc.department_id !== toDoc.department_id) {
+    return res.status(400).json({ status: 'error', message: 'Doctors must be in the same department' });
+  }
+
+  const waitingTokens = db.queue_entries.filter(q => q.doctor_id === fromDocId && q.status === 'WAITING');
+  waitingTokens.forEach(entry => {
+    entry.doctor_id = toDocId;
+    entry.transferred_from_doctor_id = fromDocId;
+    entry.transferred_at = new Date();
+    db.queue_events.push({
+      id: db.queue_events.length + 1,
+      queue_entry_id: entry.id,
+      token_number: entry.token_number,
+      event_type: 'QUEUE_TRANSFERRED',
+      actor_type: 'STAFF',
+      actor_id: req.user?.id,
+      details: { fromDoctorId: fromDocId, toDoctorId: toDocId, reason },
+      created_at: new Date()
+    });
+  });
+
+  io.emit('queue.transferred', { fromDoctorId: fromDocId, toDoctorId: toDocId, count: waitingTokens.length, reason });
+  syncRealtimeQueueE2E(fromDocId, fromDoc.department_id);
+  syncRealtimeQueueE2E(toDocId, toDoc.department_id);
+
+  res.json({
+    status: 'ok',
+    message: `Transferred ${waitingTokens.length} patients from Dr. ${fromDoc.name} to Dr. ${toDoc.name}`,
+    data: { transferredCount: waitingTokens.length, fromDoctor: fromDoc.name, toDoctor: toDoc.name }
+  });
+});
+
+// Settings & Events
+app.get('/api/queue/settings', authMiddleware, (req, res) => {
+  res.json({ status: 'ok', data: db.system_settings });
+});
+app.put('/api/queue/settings', authMiddleware, (req, res) => {
+  const newSettings = req.body.settings || req.body;
+  db.system_settings = { ...db.system_settings, ...newSettings };
+  res.json({ status: 'ok', message: 'Settings updated', data: db.system_settings });
+});
+app.get('/api/queue/events', authMiddleware, (req, res) => {
+  res.json({ status: 'ok', data: db.queue_events.slice().reverse() });
+});
+
 app.get('/api/users', authMiddleware, (req, res) => res.json({ status: 'ok', data: db.users }));
 
 // ── Patients ──────────────────────────────────────
@@ -603,6 +1096,17 @@ function transitionEntry(id, targetStatus) {
     if (entry.consultation_started_at) {
       entry.consultation_duration_minutes = Math.max(0.5, Math.round(((now - new Date(entry.consultation_started_at)) / 60000) * 10) / 10);
     }
+  } else if (targetStatus === 'MISSED') {
+    entry.missed_at = now;
+    db.queue_events.push({
+      id: db.queue_events.length + 1,
+      queue_entry_id: entry.id,
+      token_number: entry.token_number,
+      event_type: 'PATIENT_MISSED',
+      actor_type: 'STAFF',
+      notes: 'Staff marked token as missed',
+      created_at: now
+    });
   }
 
   const p = db.patients.find(pt => pt.id === entry.patient_id);
@@ -625,6 +1129,15 @@ app.post('/api/queue/:id/call', authMiddleware, (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'CALLED');
     res.json({ status: 'ok', message: 'Patient called', data: updated });
+  } catch (err) {
+    res.status(400).json({ status: 'error', message: err.message });
+  }
+});
+
+app.post('/api/queue/:id/missed', authMiddleware, (req, res) => {
+  try {
+    const updated = transitionEntry(req.params.id, 'MISSED');
+    res.json({ status: 'ok', message: 'Token marked as missed', data: updated });
   } catch (err) {
     res.status(400).json({ status: 'error', message: err.message });
   }
