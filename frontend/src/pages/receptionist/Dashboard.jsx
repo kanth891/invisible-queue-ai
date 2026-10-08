@@ -512,14 +512,18 @@ export default function ReceptionistDashboard() {
                 <option value="">Select Doctor...</option>
                 {filteredDoctors.map(d => {
                   const avail = doctorAvailability.find(a => a.id === d.id);
-                  const isLeave = avail?.operationalStatus === 'ON_LEAVE';
-                  const isPaused = avail?.operationalStatus === 'PAUSED';
-                  const isFull = avail?.capacityReached;
+                  const opStatus = avail?.operationalStatus || avail?.operational_status || avail?.computed_availability || d.operational_status || 'AVAILABLE';
+                  const isLeave = opStatus === 'ON_LEAVE';
+                  const isPaused = opStatus === 'PAUSED';
+                  const waitingCount = avail?.waitingCount ?? avail?.patientsWaiting ?? avail?.waiting_count ?? 0;
+                  const capacity = avail?.dailyCapacity ?? avail?.daily_capacity ?? avail?.capacity ?? d.daily_capacity ?? 30;
+                  const isFull = Boolean(avail?.capacityReached || avail?.isAtCapacity || (waitingCount >= capacity));
+
                   let statusBadge = '';
                   if (isLeave) statusBadge = ' - [ON LEAVE]';
                   else if (isPaused) statusBadge = ' - [PAUSED]';
-                  else if (isFull) statusBadge = ` - [FULL: ${avail?.waitingCount || 0}/${avail?.dailyCapacity || 30}]`;
-                  else if (avail) statusBadge = ` - [Available: ${avail.waitingCount} waiting]`;
+                  else if (isFull) statusBadge = ` - [FULL: ${waitingCount}/${capacity}]`;
+                  else statusBadge = ` - [Available: ${waitingCount} waiting]`;
 
                   return (
                     <option key={d.id} value={d.id} disabled={isLeave || isFull}>

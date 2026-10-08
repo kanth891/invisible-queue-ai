@@ -1202,7 +1202,7 @@ export default function PatientQueue() {
                               color: isSelected ? '#1D4ED8' : '#475569',
                             }}
                           >
-                            {doc.waitingCount} waiting
+                            {doc.waitingCount ?? doc.patientsWaiting ?? 0} waiting
                           </span>
                         </div>
                       </div>

@@ -915,14 +915,20 @@ export async function getPatientRescheduleOptions(req, res) {
         departmentName: entry.department_name,
         rescheduleCount: entry.reschedule_count || 0,
         maxReschedules,
-        options: availableOptions.map(d => ({
-          doctorId: d.id,
-          name: d.name,
-          specialization: d.specialization,
-          roomNumber: d.roomNumber,
-          patientsWaiting: d.patientsWaiting,
-          estimatedWaitMinutes: Math.max(5, (d.patientsWaiting * 12) + 2),
-        })),
+        options: availableOptions.map(d => {
+          const waiting = d.waitingCount ?? d.patientsWaiting ?? 0;
+          return {
+            doctorId: d.id,
+            id: d.id,
+            name: d.name,
+            specialization: d.specialization,
+            roomNumber: d.roomNumber || d.room_number || 'Room 101',
+            room_number: d.roomNumber || d.room_number || 'Room 101',
+            waitingCount: waiting,
+            patientsWaiting: waiting,
+            estimatedWaitMinutes: Math.max(5, (waiting * 12) + 2),
+          };
+        }),
       },
     });
   } catch (err) {

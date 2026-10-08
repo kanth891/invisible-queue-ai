@@ -825,8 +825,8 @@ export default function AdminDashboard() {
                   const isPaused = d.operational_status === 'PAUSED' || d.operationalStatus === 'PAUSED';
                   const isLeave = d.operational_status === 'ON_LEAVE' || d.operationalStatus === 'ON_LEAVE';
                   const isInactive = d.status === 'INACTIVE';
-                  const waitingCount = d.waitingCount ?? d.currentWaitingCount ?? 0;
-                  const capacity = d.daily_capacity || d.dailyCapacity || 30;
+                  const waitingCount = d.waitingCount ?? d.patientsWaiting ?? d.waiting_count ?? d.currentWaitingCount ?? 0;
+                  const capacity = d.daily_capacity || d.dailyCapacity || d.capacity || 30;
 
                   return (
                     <tr key={`doc-row-${d.id}`}>
