@@ -245,7 +245,7 @@ invisible-queue-ai/
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── scripts/
-│   └── audit_responsive.js        # Automated 18-viewport Puppeteer auditor
+│   └── setup.sh                   # Local environment & dependency setup
 ├── .env.example
 ├── docker-compose.yml
 └── README.md
@@ -638,12 +638,6 @@ npm test
 pytest ml-service/tests
 ```
 *Validates prediction schemas, boundary validation, and fallback baseline logic.*
-
-### 3. Responsive UI/UX Viewport Audit
-```bash
-node scripts/audit_responsive.js
-```
-*Runs an automated Puppeteer audit across 90 viewport combinations checking for zero horizontal scrolling and touch target accessibility.*
 
 ---
 

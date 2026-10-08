@@ -1,4 +1,4 @@
-# Invisible Queue AI — Frontend
+# Invisible Queue AI - Frontend
 
 React.js client for the Invisible Queue AI hospital management system.
 

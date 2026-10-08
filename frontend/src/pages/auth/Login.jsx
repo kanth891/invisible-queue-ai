@@ -54,7 +54,7 @@ export default function Login() {
         minHeight: '100vh',
         padding: '1.25rem',
         boxSizing: 'border-box',
-        backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.06) 0%, transparent 45%), radial-gradient(circle at 85% 10%, rgba(14, 165, 233, 0.06) 0%, transparent 40%), radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.04) 0%, transparent 50%)'
+        backgroundColor: 'var(--bg-primary)'
       }}
     >
       <div
@@ -63,11 +63,12 @@ export default function Login() {
           maxWidth: '430px',
           width: '100%',
           padding: 'clamp(1.5rem, 5vw, 2.25rem)',
-          boxShadow: '0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85)',
+          boxShadow: 'var(--shadow-card)',
           boxSizing: 'border-box',
           position: 'relative',
           overflow: 'hidden',
-          background: '#FFFFFF'
+          background: '#FFFFFF',
+          borderRadius: 'var(--radius-lg)'
         }}
       >
         {/* Luminous Top Accent Bar */}
@@ -88,14 +89,14 @@ export default function Login() {
             style={{
               width: '52px',
               height: '52px',
-              borderRadius: '0',
+              borderRadius: 'var(--radius-md)',
               background: 'var(--primary-gradient)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 0.85rem',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)'
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
             }}
           >
             <MedicalCrossIcon size={26} color="#FFFFFF" />
@@ -127,7 +128,7 @@ export default function Login() {
               color: '#B91C1C',
               border: '1px solid #FECACA',
               padding: '0.75rem 1rem',
-              borderRadius: '0',
+              borderRadius: 'var(--radius-sm)',
               marginBottom: '1.25rem',
               fontSize: '0.85rem',
               display: 'flex',

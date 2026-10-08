@@ -109,8 +109,8 @@ export default function DashboardLayout({ allowedRoles = [] }) {
             style={{
               padding: '0.45rem 0.95rem',
               fontSize: '0.82rem',
-              borderRadius: '0',
-              minHeight: '36px'
+              borderRadius: 'var(--radius-sm)',
+              minHeight: '44px'
             }}
           >
             Sign Out

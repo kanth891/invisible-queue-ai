@@ -125,7 +125,7 @@ export default function DoctorDashboard() {
               background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
               border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
               padding: '0.35rem 0.75rem',
-              borderRadius: '0',
+              borderRadius: 'var(--radius-full)',
               fontSize: '0.75rem',
               fontWeight: '700',
               color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
@@ -169,7 +169,7 @@ export default function DoctorDashboard() {
                   color: currentPatient.status === 'CALLED' ? '#1D4ED8' : '#047857',
                   border: `1px solid ${currentPatient.status === 'CALLED' ? '#BFDBFE' : '#A7F3D0'}`,
                   padding: '0.3rem 0.75rem',
-                  borderRadius: '0',
+                  borderRadius: 'var(--radius-full)',
                   fontSize: '0.75rem',
                   fontWeight: '700',
                   letterSpacing: '0.02em',
@@ -238,7 +238,7 @@ export default function DoctorDashboard() {
                       boxShadow: '0 4px 14px rgba(5, 150, 105, 0.28)',
                       padding: '0.75rem',
                       minHeight: '48px',
-                      borderRadius: '0',
+                      borderRadius: 'var(--radius-md)',
                       fontWeight: '700',
                       cursor: 'pointer',
                       fontSize: '0.92rem',
@@ -272,7 +272,7 @@ export default function DoctorDashboard() {
                 <div style={{
                   width: '56px',
                   height: '56px',
-                  borderRadius: '0',
+                  borderRadius: 'var(--radius-md)',
                   background: '#EFF6FF',
                   border: '1px solid #BFDBFE',
                   display: 'flex',
@@ -351,7 +351,7 @@ export default function DoctorDashboard() {
                         <td style={{ color: '#059669', fontSize: '0.82rem', fontWeight: '700' }}>
                           {q.predicted_wait_minutes !== undefined
                             ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
-                            : '—'}
+                            : '-'}
                         </td>
                       </tr>
                     ))
@@ -389,7 +389,7 @@ export default function DoctorDashboard() {
                     <span>
                       {q.predicted_wait_minutes !== undefined
                         ? (q.predicted_wait_minutes <= 2 ? 'Next in line' : `~${q.predicted_wait_minutes} min`)
-                        : '—'}
+                        : '-'}
                     </span>
                   </div>
                 </div>

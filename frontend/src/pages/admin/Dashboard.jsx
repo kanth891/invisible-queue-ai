@@ -109,7 +109,7 @@ export default function AdminDashboard() {
               background: socketStatus === 'connected' ? '#EFF6FF' : '#FEF3C7',
               border: `1px solid ${socketStatus === 'connected' ? '#BFDBFE' : '#FDE68A'}`,
               padding: '0.35rem 0.75rem',
-              borderRadius: '0',
+              borderRadius: 'var(--radius-full)',
               fontSize: '0.75rem',
               fontWeight: '700',
               color: socketStatus === 'connected' ? '#1D4ED8' : '#B45309',
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
                 color: '#1D4ED8',
                 border: '1px solid #BFDBFE',
                 padding: '0.3rem 0.8rem',
-                borderRadius: '0',
+                borderRadius: 'var(--radius-full)',
                 fontSize: '0.75rem',
                 fontWeight: '700',
                 display: 'inline-flex',
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
                   Real-time synchronization across outpatient departments
                 </p>
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#1D4ED8', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '0.25rem 0.6rem', borderRadius: '0', fontWeight: '700' }}>
+              <span style={{ fontSize: '0.72rem', color: '#1D4ED8', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-sm)', fontWeight: '700' }}>
                 Auto-updating via Socket.IO
               </span>
             </div>
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
                         background: dept.status === 'Active' ? '#ECFDF5' : '#F1F5F9',
                         color: dept.status === 'Active' ? '#047857' : 'var(--text-muted)',
                         padding: '0.2rem 0.65rem',
-                        borderRadius: '0',
+                        borderRadius: 'var(--radius-full)',
                         fontSize: '0.72rem',
                         fontWeight: '700',
                         border: `1px solid ${dept.status === 'Active' ? '#A7F3D0' : '#E2E8F0'}`
@@ -279,12 +279,12 @@ export default function AdminDashboard() {
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#F8FAFC', padding: '0.95rem', borderRadius: '0', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: '#F8FAFC', padding: '0.95rem', borderRadius: 'var(--radius-md)', border: '1px solid #E2E8F0' }}>
                     <div>
                       <div style={{ fontSize: '0.70rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.06em' }}>
                         Currently Serving
                       </div>
-                      <div style={{ fontSize: '1.45rem', fontWeight: '900', color: dept.currentlyServing !== '—' ? '#2563EB' : 'var(--text-muted)', marginTop: '0.2rem', fontFamily: "'Outfit', sans-serif" }}>
+                      <div style={{ fontSize: '1.45rem', fontWeight: '900', color: dept.currentlyServing !== '-' ? '#2563EB' : 'var(--text-muted)', marginTop: '0.2rem', fontFamily: "'Outfit', sans-serif" }}>
                         {dept.currentlyServing}
                       </div>
                     </div>
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.06em' }}>Avg Waiting Time</div>
               <div style={{ fontSize: '1.8rem', fontWeight: '800', color: analyticsData?.summary?.avgWaitingTimeMinutes ? '#2563EB' : 'var(--text-muted)', marginTop: '0.3rem', fontFamily: "'Outfit', sans-serif" }}>
-                {analyticsData?.summary?.avgWaitingTimeMinutes ? `${analyticsData.summary.avgWaitingTimeMinutes} min` : '—'}
+                {analyticsData?.summary?.avgWaitingTimeMinutes ? `${analyticsData.summary.avgWaitingTimeMinutes} min` : '-'}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 {analyticsData?.summary?.avgWaitingTimeMinutes ? 'Registration to consultation start' : 'No completed visits yet today'}
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.06em' }}>Avg Consultation Duration</div>
               <div style={{ fontSize: '1.8rem', fontWeight: '800', color: analyticsData?.summary?.avgConsultationDurationMinutes ? '#059669' : 'var(--text-muted)', marginTop: '0.3rem', fontFamily: "'Outfit', sans-serif" }}>
-                {analyticsData?.summary?.avgConsultationDurationMinutes ? `${analyticsData.summary.avgConsultationDurationMinutes} min` : '—'}
+                {analyticsData?.summary?.avgConsultationDurationMinutes ? `${analyticsData.summary.avgConsultationDurationMinutes} min` : '-'}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 Doctor time per patient
@@ -358,7 +358,7 @@ export default function AdminDashboard() {
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.06em' }}>Prediction Mean Error (MAE)</div>
               <div style={{ fontSize: '1.8rem', fontWeight: '800', color: analyticsData?.mlAccuracy?.mae !== null ? '#4F46E5' : 'var(--text-muted)', marginTop: '0.3rem', fontFamily: "'Outfit', sans-serif" }}>
-                {analyticsData?.mlAccuracy?.mae !== null ? `±${analyticsData.mlAccuracy.mae} min` : '—'}
+                {analyticsData?.mlAccuracy?.mae !== null ? `±${analyticsData.mlAccuracy.mae} min` : '-'}
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
                 {analyticsData?.mlAccuracy?.hasEnoughData ? 'Evaluated vs actual wait' : 'Collecting more telemetry (min 3)'}
@@ -390,7 +390,7 @@ export default function AdminDashboard() {
                         <td>{dp.totalRegistered}</td>
                         <td style={{ color: '#059669', fontWeight: '700' }}>{dp.served}</td>
                         <td style={{ color: dp.waiting > 0 ? '#D97706' : 'var(--text-secondary)', fontWeight: '700' }}>{dp.waiting}</td>
-                        <td style={{ fontWeight: '600' }}>{dp.avgWaitMinutes ? `${dp.avgWaitMinutes} min` : '—'}</td>
+                        <td style={{ fontWeight: '600' }}>{dp.avgWaitMinutes ? `${dp.avgWaitMinutes} min` : '-'}</td>
                       </tr>
                     ))
                   ) : (
@@ -428,7 +428,7 @@ export default function AdminDashboard() {
                         <td style={{ color: '#2563EB', fontWeight: '600' }}>{doc.departmentName}</td>
                         <td style={{ fontWeight: '600' }}>{doc.completedCount}</td>
                         <td style={{ fontWeight: '700', color: '#059669' }}>
-                          {doc.avgDurationMinutes ? `${doc.avgDurationMinutes} min` : '—'}
+                          {doc.avgDurationMinutes ? `${doc.avgDurationMinutes} min` : '-'}
                         </td>
                       </tr>
                     ))
@@ -456,7 +456,7 @@ export default function AdminDashboard() {
             </div>
 
             {(!analyticsData?.predictedVsActual || analyticsData.predictedVsActual.length === 0) ? (
-              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#F8FAFC', borderRadius: '0', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: '#F8FAFC', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
                   Not enough historical consultation data yet.
                 </div>
@@ -607,7 +607,7 @@ export default function AdminDashboard() {
                         fontSize: '0.75rem',
                         fontWeight: '700',
                         padding: '0.25rem 0.6rem',
-                        borderRadius: '0',
+                        borderRadius: 'var(--radius-sm)',
                         background: u.role === 'ADMIN' ? '#EEF2FF' : u.role === 'DOCTOR' ? '#EFF6FF' : '#ECFDF5',
                         color: u.role === 'ADMIN' ? '#4F46E5' : u.role === 'DOCTOR' ? '#1D4ED8' : '#047857',
                         border: `1px solid ${u.role === 'ADMIN' ? '#C7D2FE' : u.role === 'DOCTOR' ? '#BFDBFE' : '#A7F3D0'}`
@@ -642,14 +642,14 @@ export default function AdminDashboard() {
                   Model Version: {predictionMetrics?.modelInfo?.version || 'v1.0-gb'} • Architecture: {predictionMetrics?.modelInfo?.name || 'GradientBoostingRegressor'}
                 </p>
               </div>
-              <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.3rem 0.8rem', borderRadius: '0', fontSize: '0.75rem', fontWeight: '700' }}>
+              <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.3rem 0.8rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: '700' }}>
                 Python FastAPI Live
               </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
               <StatCard label="Training MAE" value={predictionMetrics?.modelMetrics?.mae ? `±${predictionMetrics.modelMetrics.mae}m` : '±2.8m'} color="#2563EB" />
-              <StatCard label="Live Eval MAE" value={predictionMetrics?.liveDatabaseStats?.liveMAE ? `±${predictionMetrics.liveDatabaseStats.liveMAE}m` : '—'} color="#4F46E5" />
+              <StatCard label="Live Eval MAE" value={predictionMetrics?.liveDatabaseStats?.liveMAE ? `±${predictionMetrics.liveDatabaseStats.liveMAE}m` : '-'} color="#4F46E5" />
               <StatCard label="Total Predictions" value={predictionMetrics?.liveDatabaseStats?.totalPredictions ?? 0} color="var(--text-primary)" />
               <StatCard label="Evaluated Logs" value={predictionMetrics?.liveDatabaseStats?.evaluatedCount ?? 0} color="#059669" />
             </div>
@@ -680,7 +680,7 @@ export default function AdminDashboard() {
                         <td style={{ fontWeight: '800', color: '#2563EB', fontFamily: "'Outfit', sans-serif" }}>{p.token_number}</td>
                         <td>{p.patients_ahead}</td>
                         <td style={{ fontWeight: '600' }}>~{p.predicted_wait_minutes}m</td>
-                        <td style={{ color: 'var(--text-secondary)' }}>{p.lower_bound_minutes}–{p.upper_bound_minutes} min</td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{p.lower_bound_minutes}-{p.upper_bound_minutes} min</td>
                         <td>
                           {p.actual_wait_minutes !== null ? (
                             <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{p.actual_wait_minutes}m</span>
@@ -694,7 +694,7 @@ export default function AdminDashboard() {
                               {p.prediction_error > 0 ? `+${p.prediction_error}` : p.prediction_error}m
                             </span>
                           ) : (
-                            <span style={{ color: 'var(--text-muted)' }}>—</span>
+                            <span style={{ color: 'var(--text-muted)' }}>-</span>
                           )}
                         </td>
                         <td>
@@ -703,7 +703,7 @@ export default function AdminDashboard() {
                             background: p.is_fallback ? '#FEF3C7' : '#EFF6FF',
                             color: p.is_fallback ? '#B45309' : '#1D4ED8',
                             padding: '0.2rem 0.5rem',
-                            borderRadius: '0',
+                            borderRadius: 'var(--radius-sm)',
                             border: `1px solid ${p.is_fallback ? '#FDE68A' : '#BFDBFE'}`,
                             fontWeight: '700'
                           }}>
@@ -743,7 +743,7 @@ function Tab({ active, onClick, children }) {
         minHeight: '40px',
         flexShrink: 0,
         whiteSpace: 'nowrap',
-        borderRadius: '0',
+        borderRadius: 'var(--radius-sm)',
         cursor: 'pointer',
         fontWeight: active ? '700' : '600',
         fontSize: '0.82rem',
