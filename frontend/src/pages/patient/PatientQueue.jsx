@@ -316,9 +316,10 @@ export default function PatientQueue() {
     setActionError(null);
     try {
       const res = await queueAPI.patientRescheduleOptions(accessToken);
-      setRescheduleOptions(res.data.availableDoctors || []);
-      if (res.data.availableDoctors?.length > 0) {
-        setSelectedDoctorId(res.data.availableDoctors[0].id);
+      const docs = res.data?.options || res.data?.availableDoctors || [];
+      setRescheduleOptions(docs);
+      if (docs.length > 0) {
+        setSelectedDoctorId(docs[0].id || docs[0].doctorId);
       }
     } catch (err) {
       setActionError(err.message || 'Failed to load alternative doctors');

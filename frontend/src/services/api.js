@@ -89,7 +89,7 @@ export const queueAPI = {
   patientRescheduleOptions: (accessToken) =>
     request(`/api/queue/patient/reschedule-options?accessToken=${encodeURIComponent(accessToken)}`),
   patientReschedule: (accessToken, newDoctorId) =>
-    request('/api/queue/patient/reschedule', { method: 'POST', body: JSON.stringify({ accessToken, newDoctorId }) }),
+    request('/api/queue/patient/reschedule', { method: 'POST', body: JSON.stringify({ accessToken, newDoctorId, target_doctor_id: newDoctorId }) }),
 
   // Operational Queue Actions
   transfer: (data) => request('/api/queue/transfer', { method: 'POST', body: JSON.stringify(data) }),

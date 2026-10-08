@@ -207,6 +207,23 @@ export async function autoMigrate() {
       console.log('[OK] Initial hospital data seeded successfully');
     }
 
+    // Ensure General Medicine has an alternative doctor for same-day rescheduling
+    const priyaUserRes = await client.query(`
+      INSERT INTO users (name, email, password_hash, role)
+      VALUES ('Dr. Priya Sharma', 'dr.priya@hospital.com', $1, 'DOCTOR')
+      ON CONFLICT (email) DO UPDATE SET role = 'DOCTOR', name = 'Dr. Priya Sharma'
+      RETURNING id
+    `, [bcrypt.hashSync('doctor123', 10)]);
+
+    const gmDeptQuery = await client.query("SELECT id FROM departments WHERE code = 'GM' LIMIT 1");
+    if (gmDeptQuery.rows.length > 0 && priyaUserRes.rows.length > 0) {
+      await client.query(`
+        INSERT INTO doctors (user_id, department_id, specialization, room_number, status, operational_status)
+        VALUES ($1, $2, 'General Physician', 'Room 102', 'ACTIVE', 'AVAILABLE')
+        ON CONFLICT (user_id) DO UPDATE SET department_id = $2, status = 'ACTIVE', operational_status = 'AVAILABLE'
+      `, [priyaUserRes.rows[0].id, gmDeptQuery.rows[0].id]);
+    }
+
     await client.query('COMMIT');
     console.log('[OK] Database schema verified & ready');
   } catch (err) {

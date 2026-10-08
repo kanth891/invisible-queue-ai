@@ -5,7 +5,13 @@ import { authorize } from '../middleware/auth.js';
 import mlClient from '../services/mlClient.js';
 import { getSetting, getAllSettings, updateSettings } from '../services/settingsService.js';
 import { logQueueEvent, getQueueEvents, QUEUE_EVENT_TYPES } from '../services/queueAuditService.js';
-import { evaluateDoctorAvailability, pauseDoctorQueue, resumeDoctorQueue, getTodayDateString } from '../services/doctorAvailabilityService.js';
+import {
+  evaluateDoctorAvailability,
+  pauseDoctorQueue,
+  resumeDoctorQueue,
+  getTodayDateString,
+  getAllDoctorsTodayAvailability,
+} from '../services/doctorAvailabilityService.js';
 import { checkAndReconcileSingleEntry, reconcileMissedTokens } from '../services/missedTokenReconciler.js';
 import {
   SOCKET_EVENTS,
@@ -912,6 +918,21 @@ export async function getPatientRescheduleOptions(req, res) {
       d.accountStatus === 'ACTIVE'
     );
 
+    const options = availableOptions.map(d => {
+      const waiting = d.waitingCount ?? d.patientsWaiting ?? 0;
+      return {
+        doctorId: d.id,
+        id: d.id,
+        name: d.name,
+        specialization: d.specialization,
+        roomNumber: d.roomNumber || d.room_number || 'Room 101',
+        room_number: d.roomNumber || d.room_number || 'Room 101',
+        waitingCount: waiting,
+        patientsWaiting: waiting,
+        estimatedWaitMinutes: Math.max(5, (waiting * 12) + 2),
+      };
+    });
+
     res.json({
       status: 'ok',
       data: {
@@ -919,20 +940,8 @@ export async function getPatientRescheduleOptions(req, res) {
         departmentName: entry.department_name,
         rescheduleCount: entry.reschedule_count || 0,
         maxReschedules,
-        options: availableOptions.map(d => {
-          const waiting = d.waitingCount ?? d.patientsWaiting ?? 0;
-          return {
-            doctorId: d.id,
-            id: d.id,
-            name: d.name,
-            specialization: d.specialization,
-            roomNumber: d.roomNumber || d.room_number || 'Room 101',
-            room_number: d.roomNumber || d.room_number || 'Room 101',
-            waitingCount: waiting,
-            patientsWaiting: waiting,
-            estimatedWaitMinutes: Math.max(5, (waiting * 12) + 2),
-          };
-        }),
+        options,
+        availableDoctors: options,
       },
     });
   } catch (err) {
