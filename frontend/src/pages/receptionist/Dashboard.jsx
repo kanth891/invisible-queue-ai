@@ -9,6 +9,8 @@ export default function ReceptionistDashboard() {
   const [stats, setStats] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [doctorAvailability, setDoctorAvailability] = useState([]);
+  const [queueFilter, setQueueFilter] = useState('ALL'); // 'ALL' | 'WAITING' | 'CALLED' | 'MISSED' | 'COMPLETED'
   const [loading, setLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState('connecting');
   const isMounted = useRef(true);
@@ -27,17 +29,19 @@ export default function ReceptionistDashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [queueRes, statsRes, deptRes, docRes] = await Promise.all([
+      const [queueRes, statsRes, deptRes, docRes, availRes] = await Promise.all([
         queueAPI.list(),
         queueAPI.stats(),
         departmentsAPI.list('ACTIVE'),
-        doctorsAPI.list({ status: 'ACTIVE' })
+        doctorsAPI.list({ status: 'ACTIVE' }),
+        doctorsAPI.getTodayAvailability().catch(() => ({ data: [] })),
       ]);
       if (isMounted.current) {
         setQueue(queueRes.data);
         setStats(statsRes.data);
         setDepartments(deptRes.data);
         setDoctors(docRes.data);
+        setDoctorAvailability(availRes.data || []);
       }
     } catch (err) {
       console.error('Receptionist fetch error:', err);
@@ -204,6 +208,15 @@ export default function ReceptionistDashboard() {
   }
 
   const filteredDoctors = doctors.filter(d => d.department_id === parseInt(formData.department_id));
+
+  const displayedQueue = queue.filter(q => {
+    if (queueFilter === 'ALL') return true;
+    if (queueFilter === 'WAITING') return q.status === 'WAITING';
+    if (queueFilter === 'CALLED') return q.status === 'CALLED';
+    if (queueFilter === 'MISSED') return q.status === 'MISSED';
+    if (queueFilter === 'COMPLETED') return ['COMPLETED', 'NO_SHOW', 'CANCELLED'].includes(q.status);
+    return true;
+  });
 
   return (
     <div>
@@ -497,7 +510,23 @@ export default function ReceptionistDashboard() {
                 disabled={!formData.department_id}
               >
                 <option value="">Select Doctor...</option>
-                {filteredDoctors.map(d => <option key={d.id} value={d.id}>{d.name} ({d.specialization})</option>)}
+                {filteredDoctors.map(d => {
+                  const avail = doctorAvailability.find(a => a.id === d.id);
+                  const isLeave = avail?.operationalStatus === 'ON_LEAVE';
+                  const isPaused = avail?.operationalStatus === 'PAUSED';
+                  const isFull = avail?.capacityReached;
+                  let statusBadge = '';
+                  if (isLeave) statusBadge = ' - [ON LEAVE]';
+                  else if (isPaused) statusBadge = ' - [PAUSED]';
+                  else if (isFull) statusBadge = ` - [FULL: ${avail?.waitingCount || 0}/${avail?.dailyCapacity || 30}]`;
+                  else if (avail) statusBadge = ` - [Available: ${avail.waitingCount} waiting]`;
+
+                  return (
+                    <option key={d.id} value={d.id} disabled={isLeave || isFull}>
+                      {d.name} ({d.specialization || 'General'}){d.room_number ? ` • Rm ${d.room_number}` : ''}{statusBadge}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -526,9 +555,33 @@ export default function ReceptionistDashboard() {
               <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
                 Live Outpatient Queue ({queue.length})
               </h2>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                Real-time queue sequence and remote digital pass status
-              </p>
+              <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+                {[
+                  { key: 'ALL', label: `All (${queue.length})` },
+                  { key: 'WAITING', label: `Waiting (${queue.filter(q => q.status === 'WAITING').length})` },
+                  { key: 'CALLED', label: `Called (${queue.filter(q => q.status === 'CALLED').length})` },
+                  { key: 'MISSED', label: `Missed (${queue.filter(q => q.status === 'MISSED').length})` },
+                  { key: 'COMPLETED', label: `Completed (${queue.filter(q => ['COMPLETED', 'NO_SHOW', 'CANCELLED'].includes(q.status)).length})` },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setQueueFilter(tab.key)}
+                    style={{
+                      background: queueFilter === tab.key ? 'var(--primary-blue)' : '#F1F5F9',
+                      color: queueFilter === tab.key ? '#FFFFFF' : 'var(--text-secondary)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.2rem 0.5rem',
+                      fontSize: '0.72rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={fetchData}
@@ -556,8 +609,8 @@ export default function ReceptionistDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {queue.length > 0 ? (
-                    queue.map((q) => (
+                  {displayedQueue.length > 0 ? (
+                    displayedQueue.map((q) => (
                       <tr key={`recep-queue-${q.id}`}>
                         {/* Token */}
                         <td style={{ fontWeight: '800', color: '#2563EB', fontSize: '0.92rem', fontFamily: "'Outfit', sans-serif" }}>
@@ -630,7 +683,7 @@ export default function ReceptionistDashboard() {
 
           {/* Mobile Card View (< 768px) */}
           <div className="cards-mobile-view">
-            {queue.map(q => (
+            {displayedQueue.map(q => (
               <div key={q.id} className="mobile-queue-card">
                 <div className="mobile-queue-card__header">
                   <span className="mobile-queue-card__token">{q.token_number}</span>
@@ -795,6 +848,7 @@ function getStatusDotClass(status) {
     case 'IN_CONSULTATION': return 'status-dot--consultation';
     case 'COMPLETED': return 'status-dot--completed';
     case 'CANCELLED': return 'status-dot--cancelled';
+    case 'MISSED': return 'status-dot--cancelled';
     default: return 'status-dot--noshow';
   }
 }
@@ -806,6 +860,7 @@ function formatStatus(status) {
     case 'IN_CONSULTATION': return 'In Consultation';
     case 'COMPLETED': return 'Completed';
     case 'CANCELLED': return 'Cancelled';
+    case 'MISSED': return 'Missed (Grace Expired)';
     case 'NO_SHOW': return 'No Show';
     default: return status;
   }

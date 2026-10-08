@@ -44,6 +44,13 @@ export const doctorsAPI = {
   get: (id) => request(`/api/doctors/${id}`),
   create: (data) => request('/api/doctors', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/api/doctors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateStatus: (id, status) => request(`/api/doctors/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  getTodayAvailability: () => request('/api/doctors/availability/today'),
+  getSchedule: (id) => request(`/api/doctors/${id}/schedule`),
+  updateSchedule: (id, schedule) => request(`/api/doctors/${id}/schedule`, { method: 'PUT', body: JSON.stringify({ schedule }) }),
+  getLeaves: (id) => request(`/api/doctors/${id}/leaves`),
+  addLeave: (id, data) => request(`/api/doctors/${id}/leave`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteLeave: (id, leaveId) => request(`/api/doctors/${id}/leave/${leaveId}`, { method: 'DELETE' }),
 };
 
 // ── Patients ────────────────────────────────────────
@@ -72,6 +79,32 @@ export const queueAPI = {
   complete: (id) => request(`/api/queue/${id}/complete`, { method: 'POST' }),
   noShow: (id) => request(`/api/queue/${id}/no-show`, { method: 'POST' }),
   cancel: (id) => request(`/api/queue/${id}/cancel`, { method: 'POST' }),
+
+  // Patient Self-Service Controls (Public token-authenticated)
+  patientCancel: (accessToken, reason) =>
+    request('/api/queue/patient/cancel', { method: 'POST', body: JSON.stringify({ accessToken, reason }) }),
+  patientRejoin: (accessToken) =>
+    request('/api/queue/patient/rejoin', { method: 'POST', body: JSON.stringify({ accessToken }) }),
+  patientRescheduleOptions: (accessToken) =>
+    request(`/api/queue/patient/reschedule-options?accessToken=${encodeURIComponent(accessToken)}`),
+  patientReschedule: (accessToken, newDoctorId) =>
+    request('/api/queue/patient/reschedule', { method: 'POST', body: JSON.stringify({ accessToken, newDoctorId }) }),
+
+  // Operational Queue Actions
+  transfer: (data) => request('/api/queue/transfer', { method: 'POST', body: JSON.stringify(data) }),
+  pauseDoctorQueue: (doctorId, reason) =>
+    request(`/api/queue/doctor/${doctorId}/pause`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  resumeDoctorQueue: (doctorId) =>
+    request(`/api/queue/doctor/${doctorId}/resume`, { method: 'POST' }),
+
+  // Configuration and Auditing
+  getSettings: () => request('/api/queue/settings'),
+  updateSettings: (settings) =>
+    request('/api/queue/settings', { method: 'PUT', body: JSON.stringify({ settings }) }),
+  getEvents: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/queue/events${qs ? `?${qs}` : ''}`);
+  },
 };
 
 // ── Users ───────────────────────────────────────────
@@ -89,4 +122,5 @@ export const analyticsAPI = {
   liveStatus: () => request('/api/analytics/live-status'),
   overview: () => request('/api/analytics/overview'),
 };
+
 

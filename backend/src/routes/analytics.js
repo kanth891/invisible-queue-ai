@@ -86,8 +86,12 @@ router.get('/overview', authorize('ADMIN'), async (req, res) => {
         COUNT(*) FILTER (WHERE status = 'COMPLETED') as patients_served_today,
         COUNT(*) FILTER (WHERE status = 'WAITING') as current_waiting_patients,
         COUNT(*) FILTER (WHERE status = 'IN_CONSULTATION') as current_in_consultation,
+        COUNT(*) FILTER (WHERE status = 'MISSED') as missed_today,
         COUNT(*) FILTER (WHERE status = 'NO_SHOW') as no_shows_today,
         COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancellations_today,
+        COUNT(*) FILTER (WHERE rejoin_count > 0) as rejoined_today,
+        COUNT(*) FILTER (WHERE reschedule_count > 0) as rescheduled_today,
+        COUNT(*) FILTER (WHERE transferred_from_doctor_id IS NOT NULL) as transferred_today,
         
         -- Actual waiting time: from created_at to consultation_started_at
         ROUND(AVG(
@@ -215,8 +219,12 @@ router.get('/overview', authorize('ADMIN'), async (req, res) => {
           patientsServedToday: parseInt(s.patients_served_today || 0, 10),
           currentWaitingPatients: parseInt(s.current_waiting_patients || 0, 10),
           currentInConsultation: parseInt(s.current_in_consultation || 0, 10),
+          missedToday: parseInt(s.missed_today || 0, 10),
           noShowsToday: parseInt(s.no_shows_today || 0, 10),
           cancellationsToday: parseInt(s.cancellations_today || 0, 10),
+          rejoinedToday: parseInt(s.rejoined_today || 0, 10),
+          rescheduledToday: parseInt(s.rescheduled_today || 0, 10),
+          transferredToday: parseInt(s.transferred_today || 0, 10),
           totalPatientsToday: parseInt(s.total_patients_today || 0, 10),
           avgWaitingTimeMinutes: s.avg_waiting_time_minutes ? parseFloat(s.avg_waiting_time_minutes) : null,
           avgConsultationDurationMinutes: s.avg_consultation_duration_minutes ? parseFloat(s.avg_consultation_duration_minutes) : null,
