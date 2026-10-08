@@ -402,6 +402,18 @@ export default function PatientQueue() {
   const isConsulting = data.status === 'IN_CONSULTATION';
   const isCompleted = data.status === 'COMPLETED';
 
+  const canCancel = data.canCancel !== undefined
+    ? Boolean(data.canCancel)
+    : !['COMPLETED', 'CANCELLED', 'NO_SHOW', 'IN_CONSULTATION'].includes(data.status);
+
+  const canRejoin = data.canRejoin !== undefined
+    ? Boolean(data.canRejoin)
+    : (data.status === 'MISSED' && (data.rejoinCount || 0) < (data.maxRejoins || 2));
+
+  const canReschedule = data.canReschedule !== undefined
+    ? Boolean(data.canReschedule)
+    : (['WAITING', 'MISSED'].includes(data.status) && (data.rescheduleCount || 0) < (data.maxReschedules || 2));
+
   return (
     <div className="patient-queue-container">
       {/* Hospital Brand Header with Live Status Indicator */}
@@ -589,7 +601,7 @@ export default function PatientQueue() {
             )}
 
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {data.canRejoin ? (
+              {canRejoin ? (
                 <button
                   onClick={handleRejoinQueue}
                   disabled={rejoining}
@@ -621,7 +633,7 @@ export default function PatientQueue() {
                   minHeight: '40px',
                 }}
               >
-                Cancel Visit
+                Cancel Queue Entry
               </button>
             </div>
           </div>
@@ -957,7 +969,7 @@ export default function PatientQueue() {
         )}
 
         {/* ── Patient Self-Service Action Bar (Cancel / Reschedule) ── */}
-        {['WAITING', 'CALLED'].includes(data.status) && (data.canCancel || data.canReschedule) && (
+        {['WAITING', 'CALLED'].includes(data.status) && (canCancel || canReschedule) && (
           <div
             style={{
               display: 'flex',
@@ -966,7 +978,7 @@ export default function PatientQueue() {
               flexWrap: 'wrap',
             }}
           >
-            {data.canReschedule && (
+            {canReschedule && (
               <button
                 type="button"
                 onClick={openRescheduleModal}
@@ -991,7 +1003,7 @@ export default function PatientQueue() {
               </button>
             )}
 
-            {data.canCancel && (
+            {canCancel && (
               <button
                 type="button"
                 onClick={() => setShowCancelModal(true)}
@@ -1012,7 +1024,7 @@ export default function PatientQueue() {
                 onMouseOver={(e) => (e.currentTarget.style.background = '#FEF2F2')}
                 onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
               >
-                Cancel Queue
+                Cancel Queue Entry
               </button>
             )}
           </div>
@@ -1047,7 +1059,7 @@ export default function PatientQueue() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#DC2626', marginBottom: '0.75rem' }}>
                 <AlertTriangleIcon size={22} color="#DC2626" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Cancel Consultation?</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Cancel Queue Entry?</h3>
               </div>
               <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1rem' }}>
                 Are you sure you want to cancel your queue spot for <strong>{data.token}</strong>? You will forfeit your position #{data.position ?? 1} and will stop receiving turn alerts.
@@ -1100,7 +1112,7 @@ export default function PatientQueue() {
                     borderColor: '#DC2626',
                   }}
                 >
-                  {cancelling ? 'Cancelling...' : 'Yes, Cancel Queue'}
+                  {cancelling ? 'Cancelling...' : 'Yes, Cancel Queue Entry'}
                 </button>
               </div>
             </div>

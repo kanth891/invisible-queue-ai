@@ -449,6 +449,7 @@ export async function syncDoctorQueueRealtime(doctorId, departmentId, triggeredE
           status: 'MISSED',
           message: 'Your token was missed. You were not present when your token was called. You may rejoin the queue.',
           rejoinCount: triggeredEntry.rejoin_count || 0,
+          canRejoin: (triggeredEntry.rejoin_count || 0) < 2,
           missedAt: triggeredEntry.missed_at,
         });
       } else if (triggeredEntry.status === 'WAITING' && action === 'REJOINED') {
@@ -675,6 +676,9 @@ export async function getPatientQueueAccess(req, res) {
         maxRejoins,
         rescheduleCount: entry.reschedule_count || 0,
         maxReschedules,
+        canCancel: !['COMPLETED', 'CANCELLED', 'NO_SHOW', 'IN_CONSULTATION'].includes(entry.status),
+        canRejoin: entry.status === 'MISSED' && (entry.rejoin_count || 0) < maxRejoins,
+        canReschedule: ['WAITING', 'MISSED'].includes(entry.status) && (entry.reschedule_count || 0) < maxReschedules,
         doctorOperationalStatus: entry.doctor_operational_status || 'AVAILABLE',
         doctorPauseReason: entry.doctor_pause_reason || null,
         doctorPausedAt: entry.doctor_paused_at || null,

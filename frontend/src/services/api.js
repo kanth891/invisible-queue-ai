@@ -75,6 +75,7 @@ export const queueAPI = {
   getPrediction: (id) => request(`/api/queue/${id}/prediction`),
   predictionMetrics: () => request('/api/queue/admin/prediction-metrics'),
   call: (id) => request(`/api/queue/${id}/call`, { method: 'POST' }),
+  missed: (id) => request(`/api/queue/${id}/missed`, { method: 'POST' }),
   start: (id) => request(`/api/queue/${id}/start`, { method: 'POST' }),
   complete: (id) => request(`/api/queue/${id}/complete`, { method: 'POST' }),
   noShow: (id) => request(`/api/queue/${id}/no-show`, { method: 'POST' }),

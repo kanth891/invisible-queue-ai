@@ -371,14 +371,32 @@ export default function DoctorDashboard() {
               {/* Action Buttons */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', maxWidth: '280px', flexShrink: 0 }}>
                 {currentPatient.status === 'CALLED' && (
-                  <button
-                    onClick={() => handleAction(currentPatient.id, 'start')}
-                    disabled={actionLoading}
-                    className="btn-primary"
-                    style={{ width: '100%', minHeight: '48px', fontSize: '0.92rem' }}
-                  >
-                    Start Consultation
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleAction(currentPatient.id, 'start')}
+                      disabled={actionLoading}
+                      className="btn-primary"
+                      style={{ width: '100%', minHeight: '48px', fontSize: '0.92rem' }}
+                    >
+                      Start Consultation
+                    </button>
+                    <button
+                      onClick={() => handleAction(currentPatient.id, 'missed')}
+                      disabled={actionLoading}
+                      className="btn-secondary"
+                      style={{
+                        width: '100%',
+                        minHeight: '44px',
+                        fontSize: '0.85rem',
+                        color: '#B45309',
+                        borderColor: '#FCD34D',
+                        background: '#FFFBEB',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Mark Missed
+                    </button>
+                  </>
                 )}
 
                 {currentPatient.status === 'IN_CONSULTATION' && (
