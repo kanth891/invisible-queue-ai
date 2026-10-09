@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 console.log('══════════════════════════════════════════════════════════════════');
-console.log('🔬 INVISIBLE QUEUE AI — FULL END-TO-END AUTOMATED TEST SUITE');
+console.log('[AUDIT] INVISIBLE QUEUE AI  -  FULL END-TO-END AUTOMATED TEST SUITE');
 console.log('══════════════════════════════════════════════════════════════════\n');
 
 const BASE_URL = 'http://localhost:5000';
@@ -11,7 +11,7 @@ async function runE2E() {
   let newPatientId, newQueueEntry;
 
   // ── 1. Authenticate Staff Roles ─────────────────────────────────
-  console.log('📌 STEP 1: Staff Authentication');
+  console.log('[STEP] STEP 1: Staff Authentication');
   const recepLoginRes = await fetch(`${BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,7 +43,7 @@ async function runE2E() {
   console.log('   ✓ Admin logged in successfully\n');
 
   // ── TEST 1: Receptionist Registers Patient ────────────────────────
-  console.log('📌 TEST 1: Receptionist registers patient');
+  console.log('[STEP] TEST 1: Receptionist registers patient');
   const patientRes = await fetch(`${BASE_URL}/api/patients`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${recepToken}` },
@@ -56,7 +56,7 @@ async function runE2E() {
   console.log(`   ✓ Patient created: Sneha Rao (ID: ${newPatientId})`);
 
   // ── TEST 2 & 3: Token Generated & Secure Queue Link Generated ─────
-  console.log('\n📌 TEST 2 & 3: Token and Secure Access Token Generation');
+  console.log('\n[STEP] TEST 2 & 3: Token and Secure Access Token Generation');
   const tokenRes = await fetch(`${BASE_URL}/api/queue/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${recepToken}` },
@@ -73,7 +73,7 @@ async function runE2E() {
   console.log(`   ✓ Queue URL: http://localhost:5173/queue/${newQueueEntry.queue_access_token}`);
 
   // ── TEST 4, 5, 6, 7: Public Patient Queue Access Verification ─────
-  console.log('\n📌 TEST 4, 5, 6, 7: Patient Queue View Data Verification');
+  console.log('\n[STEP] TEST 4, 5, 6, 7: Patient Queue View Data Verification');
   const patientViewRes = await fetch(`${BASE_URL}/api/queue/access/${newQueueEntry.queue_access_token}`);
   assert.strictEqual(patientViewRes.status, 200, 'Public endpoint must return 200 OK without login');
   const patientView = await patientViewRes.json();
@@ -96,7 +96,7 @@ async function runE2E() {
   console.log(`   ✓ Test 10 Passed: Approaching flag is boolean (${patientView.data.isApproaching})`);
 
   // ── TEST 8 & 9: Doctor Progresses Queue & Patient Position Updates ─
-  console.log('\n📌 TEST 8 & 9: Doctor Advances Queue Towards Sneha Rao');
+  console.log('\n[STEP] TEST 8 & 9: Doctor Advances Queue Towards Sneha Rao');
   // First clear any currently serving patient for doctor 1 so doctor can call
   const docQueueRes = await fetch(`${BASE_URL}/api/queue/doctor/1`, {
     headers: { Authorization: `Bearer ${doctorToken}` }
@@ -118,7 +118,7 @@ async function runE2E() {
   }
 
   // Doctor calls Sneha Rao directly or progresses to her
-  console.log('\n📌 Simulating turn arrival for Sneha Rao:');
+  console.log('\n[STEP] Simulating turn arrival for Sneha Rao:');
   const callRes = await fetch(`${BASE_URL}/api/queue/${newQueueEntry.id}/call`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${doctorToken}` }
@@ -148,7 +148,7 @@ async function runE2E() {
   console.log('   ✓ Sneha Rao status updated to: COMPLETED');
 
   // ── TEST 11 & SECURITY: Unauthorized / Invalid Access Test ─────────
-  console.log('\n📌 TEST 11 & SECURITY: Privacy, Data Isolation, and Invalid Token Testing');
+  console.log('\n[STEP] TEST 11 & SECURITY: Privacy, Data Isolation, and Invalid Token Testing');
   const invalidRes = await fetch(`${BASE_URL}/api/queue/access/fake_invalid_token_999999`);
   assert.strictEqual(invalidRes.status, 404, 'Non-existent token must return 404');
   console.log('   ✓ Test 11 Passed: Invalid/fake access token returns 404 cleanly');
@@ -161,7 +161,7 @@ async function runE2E() {
   console.log('   ✓ Security Passed: Zero PII (no phone, no patient name, no internal DB ID) leaked');
 
   // ── TEST 12: Phase 1 Receptionist Functionality ───────────────────
-  console.log('\n📌 TEST 12: Phase 1 Receptionist Functionality Still Works');
+  console.log('\n[STEP] TEST 12: Phase 1 Receptionist Functionality Still Works');
   const recepQueueRes = await fetch(`${BASE_URL}/api/queue`, { headers: { Authorization: `Bearer ${recepToken}` } });
   const recepQueue = await recepQueueRes.json();
   assert.strictEqual(recepQueue.status, 'ok');
@@ -169,14 +169,14 @@ async function runE2E() {
   console.log(`   ✓ Receptionist can view full queue (${recepQueue.data.length} patients listed)`);
 
   // ── TEST 13: Phase 1 Doctor Functionality ─────────────────────────
-  console.log('\n📌 TEST 13: Phase 1 Doctor Functionality Still Works');
+  console.log('\n[STEP] TEST 13: Phase 1 Doctor Functionality Still Works');
   const docQueueFinalRes = await fetch(`${BASE_URL}/api/queue/doctor/1`, { headers: { Authorization: `Bearer ${doctorToken}` } });
   const docQueue = await docQueueFinalRes.json();
   assert.strictEqual(docQueue.status, 'ok');
   console.log(`   ✓ Doctor can fetch doctor queue (${docQueue.data.length} entries for Dr. Ravi)`);
 
   // ── TEST 14: Phase 1 Admin Functionality ──────────────────────────
-  console.log('\n📌 TEST 14: Phase 1 Admin Functionality Still Works');
+  console.log('\n[STEP] TEST 14: Phase 1 Admin Functionality Still Works');
   const statsRes = await fetch(`${BASE_URL}/api/queue/stats`, { headers: { Authorization: `Bearer ${adminToken}` } });
   const stats = await statsRes.json();
   assert.strictEqual(stats.status, 'ok');
@@ -186,7 +186,7 @@ async function runE2E() {
   console.log(`   ✓ Admin stats working: Total: ${stats.data.total_patients}, Completed: ${stats.data.completed}, Active Virtual Queues: ${stats.data.active_virtual_queues}`);
 
   console.log('\n══════════════════════════════════════════════════════════════════');
-  console.log('🎉 ALL 14 TESTS & SECURITY CHECKS PASSED WITH 100% SUCCESS!');
+  console.log('[SUCCESS] ALL 14 TESTS & SECURITY CHECKS PASSED WITH 100% SUCCESS!');
   console.log('══════════════════════════════════════════════════════════════════\n');
 }
 

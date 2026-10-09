@@ -1,4 +1,4 @@
-# Invisible Queue AI — Machine Learning Waiting-Time Prediction Service
+# Invisible Queue AI -  Machine Learning Waiting-Time Prediction Service
 
 ## 1. Overview & Research Problem
 
@@ -7,7 +7,7 @@ The waiting-time prediction microservice for **Invisible Queue AI** forecasts ou
 ### Core Contribution
 > **"We integrate intelligent waiting-time prediction directly with a real-time virtual hospital queue, enabling patients to remotely monitor their queue position and make informed decisions about when to return for consultation."**
 
-The system does not fabricate arbitrary wait estimates (e.g. `± 5 min`), but instead learns from queue state variables and produces statistically grounded empirical prediction intervals (e.g., `15–22 min`).
+The system does not fabricate arbitrary wait estimates (e.g. `± 5 min`), but instead learns from queue state variables and produces statistically grounded empirical prediction intervals (e.g., `15-22 min`).
 
 ---
 
@@ -35,10 +35,10 @@ Serialized ML Pipeline (waiting_time_model.joblib)
 - **Type**: `SYNTHETIC_DEVELOPMENT` (Clearly separated development dataset modeling outpatient queue physics).
 - **Records**: 5,000 completed consultation records across 60 clinic days.
 - **Consultation Dynamics**:
-  - Medical consultation durations follow empirical **log-normal distributions** with positive skew (most visits 10–14 min, complex visits 25–35 min).
-  - Department-specific pacing (General Medicine, Cardiology, Pediatrics, Orthopedics, Dermatology).
-  - Doctor-specific efficiencies and clinic rush periods (peak hours: 9–11 AM, 2–4 PM; higher volume on Mondays and Saturdays).
-  - Queue turnaround buffer (sanitization, patient entry/exit: 0.5–1.5 min per visit).
+ - Medical consultation durations follow empirical **log-normal distributions** with positive skew (most visits 10-14 min, complex visits 25-35 min).
+ - Department-specific pacing (General Medicine, Cardiology, Pediatrics, Orthopedics, Dermatology).
+ - Doctor-specific efficiencies and clinic rush periods (peak hours: 9-11 AM, 2-4 PM; higher volume on Mondays and Saturdays).
+ - Queue turnaround buffer (sanitization, patient entry/exit: 0.5-1.5 min per visit).
 - **Production Retraining**: Once sufficient real hospital records are gathered in the PostgreSQL database, the service supports automated retraining via `POST /train` or `python train.py`.
 
 ---
@@ -56,7 +56,7 @@ All features are restricted to variables known **at arrival / prediction time**.
 | `queue_length` | Integer | Total active queue load for doctor at prediction moment |
 | `department_id` | Integer | Clinical specialty code (e.g. GM, CAR, PED) |
 | `completed_today` | Integer | Number of patients completed so far today (fatigue proxy) |
-| `hour_of_day` | Integer | Hour of prediction (0–23) |
+| `hour_of_day` | Integer | Hour of prediction (0-23) |
 | `day_of_week` | Integer | Day of week (0=Mon, 6=Sun) |
 | `is_peak_hour` | Binary | 1 during peak outpatient rush, 0 otherwise |
 

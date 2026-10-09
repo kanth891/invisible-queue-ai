@@ -58,6 +58,10 @@ router.post('/', authorize('ADMIN', 'RECEPTIONIST'), async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Name, age, gender, and phone are required' });
     }
 
+    if (typeof name !== 'string' || typeof phone !== 'string' || typeof gender !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'Name, phone, and gender must be strings' });
+    }
+
     const ageNum = parseInt(age, 10);
     if (isNaN(ageNum) || ageNum < 1 || ageNum > 150) {
       return res.status(400).json({ status: 'error', message: 'Age must be between 1 and 150' });

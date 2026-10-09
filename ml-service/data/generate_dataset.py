@@ -1,5 +1,5 @@
 """
-Invisible Queue AI — Outpatient Queue Dataset Generator
+Invisible Queue AI -  Outpatient Queue Dataset Generator
 Generates realistic outpatient hospital queue consultation records for waiting-time prediction.
 
 Features generated strictly reflect queue state at arrival/prediction time:

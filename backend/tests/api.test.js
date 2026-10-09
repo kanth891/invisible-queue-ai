@@ -3,7 +3,7 @@ import http from 'http';
 import express from 'express';
 import { getPatientQueueAccess } from '../src/routes/queue.js';
 
-console.log('🧪 Starting API Integration Test for Virtual Queue Endpoints...\n');
+console.log('[TEST] Starting API Integration Test for Virtual Queue Endpoints...\n');
 
 // Set approaching threshold for testing
 process.env.APPROACHING_THRESHOLD = '2';
@@ -148,7 +148,7 @@ server.listen(0, async () => {
     assert.strictEqual(res3.status, 400, 'Expected 400 Bad Request for short token');
     console.log('✅ PASS: Malformed token rejected with 400 Bad Request.');
 
-    console.log('\n🎉 ALL API INTEGRATION TESTS PASSED!\n');
+    console.log('\n[SUCCESS] ALL API INTEGRATION TESTS PASSED!\n');
   } finally {
     server.close();
   }

@@ -1,5 +1,5 @@
 /**
- * Invisible Queue AI — Phase 3 Multi-Doctor & Multi-Patient Live Simulation Test
+ * Invisible Queue AI  -  Phase 3 Multi-Doctor & Multi-Patient Live Simulation Test
  * 
  * Simulates a realistic outpatient clinic day:
  * - 3 Doctors across 3 Departments (General Medicine, Cardiology, Pediatrics)
@@ -15,7 +15,7 @@ import assert from 'assert';
 import mlClient from '../src/services/mlClient.js';
 
 console.log('══════════════════════════════════════════════════════════════════════════════');
-console.log('🏥 INVISIBLE QUEUE AI — PHASE 3 MULTI-DOCTOR & MULTI-PATIENT SIMULATION');
+console.log('[HOSPITAL] INVISIBLE QUEUE AI  -  PHASE 3 MULTI-DOCTOR & MULTI-PATIENT SIMULATION');
 console.log('══════════════════════════════════════════════════════════════════════════════\n');
 
 // ── 1. Setup Clinical Setup: 3 Doctors & Departments ───────────────────────
@@ -55,7 +55,7 @@ const patientRoster = [
 ];
 
 async function runSimulation() {
-  console.log('📌 STEP 1: Registering 14 Patients & Assigning to 3 Doctor Queues\n');
+  console.log('[STEP] STEP 1: Registering 14 Patients & Assigning to 3 Doctor Queues\n');
 
   // Queues state per doctor: { docId: [ patientEntry, ... ] }
   const queues = { 1: [], 2: [], 3: [] };
@@ -92,7 +92,7 @@ async function runSimulation() {
   console.log(`✓ Pediatrics (Dr. Suresh Menon):        ${queues[3].length} patients queued\n`);
 
   // ── 2. Live Waiting-Time Predictions Across All Queues ──────────────────────
-  console.log('📌 STEP 2: Computing Real-Time AI Predictions via ML Microservice (:8000)\n');
+  console.log('[STEP] STEP 2: Computing Real-Time AI Predictions via ML Microservice (:8000)\n');
 
   console.log('-----------------------------------------------------------------------------------------');
   console.log(String('Token').padEnd(10) + String('Doctor').padEnd(20) + String('Patients Ahead').padEnd(16) + String('Predicted Wait').padEnd(18) + 'Interval Range');
@@ -126,7 +126,7 @@ async function runSimulation() {
 
       const aheadStr = `${patientsAhead} ahead`;
       const waitStr = `~${pred.predicted_wait_minutes} min`;
-      const rangeStr = `${pred.lower_bound_minutes}–${pred.upper_bound_minutes} min (${pred.model_version})`;
+      const rangeStr = `${pred.lower_bound_minutes} to ${pred.upper_bound_minutes} min (${pred.model_version})`;
 
       console.log(
         entry.tokenNumber.padEnd(10) +
@@ -157,7 +157,7 @@ async function runSimulation() {
   console.log('✓ Model correctly differentiates departmental clinical pacing!\n');
 
   // ── 3. Queue Progression Simulation & Dynamic Recalculation ─────────────────
-  console.log('📌 STEP 3: Simulating Queue Movement & Recalculation');
+  console.log('[STEP] STEP 3: Simulating Queue Movement & Recalculation');
   console.log('   Action: Dr. Ravi Kumar calls GM-001 for consultation...\n');
 
   const gmQueue = queues[1];
@@ -183,12 +183,12 @@ async function runSimulation() {
   const recalculatedGM002 = await mlClient.predictWaitingTime(newFeaturesGM002);
   console.log(`   Patient GM-002 Recalculated Prediction:`);
   console.log(`   - Previous Status: 1 patient ahead (~13.6 min)`);
-  console.log(`   - New Status:      0 patients ahead (Next in line) -> ${recalculatedGM002.predicted_wait_minutes} min [${recalculatedGM002.lower_bound_minutes}–${recalculatedGM002.upper_bound_minutes} min]`);
+  console.log(`   - New Status:      0 patients ahead (Next in line) -> ${recalculatedGM002.predicted_wait_minutes} min [${recalculatedGM002.lower_bound_minutes} to ${recalculatedGM002.upper_bound_minutes} min]`);
   assert.strictEqual(recalculatedGM002.predicted_wait_minutes, 2.0, 'Should update to immediate next in line');
   console.log('   ✓ Live queue state dynamically adjusted waiting time for GM-002!\n');
 
   // ── 4. Actual vs. Predicted Error Tracking ──────────────────────────────────
-  console.log('📌 STEP 4: Doctor Completes Consultation & Actual vs. Predicted Error Audit');
+  console.log('[STEP] STEP 4: Doctor Completes Consultation & Actual vs. Predicted Error Audit');
   const now = new Date();
   const simulatedActualWaitMinutes = 14.2; // Actual wait before Dr called them
   const simulatedPredictedWaitMinutes = 13.5;
@@ -202,7 +202,7 @@ async function runSimulation() {
   console.log('   ✓ Telemetry error tracked successfully for Phase 4 analytics!\n');
 
   // ── 5. Admin Research Benchmark Summary ─────────────────────────────────────
-  console.log('📌 STEP 5: Verifying Admin Research Model Metrics & Feature Weights');
+  console.log('[STEP] STEP 5: Verifying Admin Research Model Metrics & Feature Weights');
   const metrics = await mlClient.getModelMetrics();
   console.log(`   - Selected Best Model: ${metrics.best_model_name} (${metrics.model_version})`);
   console.log(`   - Test Set MAE:        ${metrics.selected_model_metrics.test_mae} min`);
@@ -213,7 +213,7 @@ async function runSimulation() {
   });
 
   console.log('\n══════════════════════════════════════════════════════════════════════════════');
-  console.log('🎉 ALL 14 PATIENTS & 3 DOCTOR QUEUES SIMULATED WITH 100% SUCCESS!');
+  console.log('[SUCCESS] ALL 14 PATIENTS & 3 DOCTOR QUEUES SIMULATED WITH 100% SUCCESS!');
   console.log('══════════════════════════════════════════════════════════════════════════════\n');
 }
 

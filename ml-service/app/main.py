@@ -1,5 +1,5 @@
 """
-Invisible Queue AI — FastAPI Machine Learning Service
+Invisible Queue AI - FastAPI Machine Learning Service
 Provides intelligent outpatient waiting-time predictions and model research metrics.
 """
 
@@ -21,7 +21,7 @@ from app.services.predictor import predictor
 from train import train_and_evaluate
 
 app = FastAPI(
-    title="Invisible Queue AI — Waiting-Time Prediction Service",
+    title="Invisible Queue AI - Waiting-Time Prediction Service",
     description="Machine Learning service for real-time outpatient waiting-time forecasting.",
     version="1.0.0"
 )

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import mlClient from '../src/services/mlClient.js';
 
-console.log('🧪 Starting Invisible Queue AI — Phase 3 AI Waiting-Time Prediction Verification Suite...\n');
+console.log('[TEST] Starting Invisible Queue AI  -  Phase 3 AI Waiting-Time Prediction Verification Suite...\n');
 
 // Test 1: Fallback Baseline Prediction when ML service is unavailable or cold-starting
 console.log('Test 1: Fallback baseline calculation for waiting patients');
@@ -25,16 +25,16 @@ assert(pred1.lower_bound_minutes <= pred1.predicted_wait_minutes, 'Lower bound m
 assert(pred1.predicted_wait_minutes <= pred1.upper_bound_minutes, 'Predicted must be <= upper bound');
 assert(pred1.lower_bound_minutes >= 1, 'Lower bound must be >= 1 minute');
 assert(typeof pred1.model_version === 'string', 'Model version must be present');
-console.log(`✅ PASS: Predicted wait: ${pred1.predicted_wait_minutes} min [${pred1.lower_bound_minutes}–${pred1.upper_bound_minutes} min] (version: ${pred1.model_version})\n`);
+console.log(`✅ PASS: Predicted wait: ${pred1.predicted_wait_minutes} min [${pred1.lower_bound_minutes} to ${pred1.upper_bound_minutes} min] (version: ${pred1.model_version})\n`);
 
-// Test 2: Edge Case — 0 Patients Ahead (Next in line)
+// Test 2: Edge Case  -  0 Patients Ahead (Next in line)
 console.log('Test 2: Edge case when 0 patients ahead (next in line)');
 const mockZero = { patients_ahead: 0 };
 const predZero = await mlClient.predictWaitingTime(mockZero);
 assert.strictEqual(predZero.predicted_wait_minutes, 2.0, 'Wait time for next patient must be 2.0 min');
 assert.strictEqual(predZero.lower_bound_minutes, 1, 'Lower bound for next patient must be 1 min');
 assert(predZero.upper_bound_minutes <= 4, 'Upper bound for next patient must be <= 4 min');
-console.log(`✅ PASS: Next in line correctly returns immediate consultation buffer: ${predZero.predicted_wait_minutes} min [${predZero.lower_bound_minutes}–${predZero.upper_bound_minutes} min]\n`);
+console.log(`✅ PASS: Next in line correctly returns immediate consultation buffer: ${predZero.predicted_wait_minutes} min [${predZero.lower_bound_minutes} to ${predZero.upper_bound_minutes} min]\n`);
 
 // Test 3: Model Info & Serialized Artifacts
 console.log('Test 3: Model info retrieval and feature names');
@@ -102,4 +102,4 @@ forbiddenLeakingFeatures.forEach(leak => {
 });
 console.log('✅ PASS: Confirmed zero temporal data leakage in model features.\n');
 
-console.log('🎉 ALL PHASE 3 VERIFICATION TESTS PASSED SUCCESSFULLY!');
+console.log('[SUCCESS] ALL PHASE 3 VERIFICATION TESTS PASSED SUCCESSFULLY!');

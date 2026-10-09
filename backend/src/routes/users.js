@@ -52,6 +52,10 @@ router.post('/', authorize('ADMIN'), async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Name, email, password, and role are required' });
     }
 
+    if (typeof name !== 'string' || typeof email !== 'string' || typeof password !== 'string' || typeof role !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'Name, email, password, and role must be strings' });
+    }
+
     const allowedRoles = ['RECEPTIONIST', 'ADMIN'];
     if (!allowedRoles.includes(role.toUpperCase())) {
       return res.status(400).json({

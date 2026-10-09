@@ -1,4 +1,4 @@
-# Invisible Queue AI — Smart Hospital Queue Management & Waiting-Time Prediction System
+# Invisible Queue AI -  Smart Hospital Queue Management & Waiting-Time Prediction System
 
 > An intelligent, real-time healthcare queue management and machine-learning waiting-time prediction platform that eliminates physical hospital waiting lines, relieves outpatient congestion, and empowers patients with live queue synchronization on their personal devices.
 
@@ -125,10 +125,10 @@ The platform features an enterprise-grade hospital workflow addressing real outp
 
 ### 3. Doctor Availability Management
 - **Identity vs. Operational Status**: Separates long-term staff status (`ACTIVE` / `INACTIVE`) from real-time clinical availability:
-  - `AVAILABLE`: Consulting patients normally.
-  - `PAUSED`: Queue temporarily held for clinical rounds or breaks. New patients cannot be queued.
-  - `ON_LEAVE`: Scheduled clinical or personal leave. Excluded from intake.
-  - `INACTIVE`: Staff member disabled.
+ - `AVAILABLE`: Consulting patients normally.
+ - `PAUSED`: Queue temporarily held for clinical rounds or breaks. New patients cannot be queued.
+ - `ON_LEAVE`: Scheduled clinical or personal leave. Excluded from intake.
+ - `INACTIVE`: Staff member disabled.
 - **Weekly Working Schedules**: Recurring consultation days and hours per doctor (`doctor_schedules`).
 - **Doctor Leave Calendar**: Date-specific full-day and partial-day clinical leaves (`doctor_leaves`).
 - **Queue Pause and Resume**: Doctors or administrators can pause and resume active queues with clinical notes (e.g. "ICU Ward Round"). Existing waiting patients see a paused notification banner with their retained queue position.
@@ -141,11 +141,11 @@ The platform features an enterprise-grade hospital workflow addressing real outp
 
 ### 5. Hospital Policy Configuration and Audit Trail
 - **System Settings (`system_settings`)**: Dynamic hospital policy parameters configurable via Admin Console:
-  - `missed_token_grace_period_minutes`
-  - `max_rejoin_attempts`
-  - `max_reschedule_attempts`
-  - `daily_queue_capacity`
-  - `hospital_operating_hours`
+ - `missed_token_grace_period_minutes`
+ - `max_rejoin_attempts`
+ - `max_reschedule_attempts`
+ - `daily_queue_capacity`
+ - `hospital_operating_hours`
 - **Queue Audit Trail (`queue_events`)**: Comprehensive audit log recording `queue_entry_id`, `token_number`, `event_type` (`TOKEN_CREATED`, `CALLED`, `PATIENT_MISSED`, `PATIENT_REJOINED`, `PATIENT_RESCHEDULED`, `QUEUE_TRANSFERRED`, `QUEUE_PAUSED`, `QUEUE_RESUMED`, `CANCELLED`), actor type, actor ID, and metadata.
 
 ---
@@ -301,27 +301,27 @@ invisible-queue-ai/
 
 ## Phase-wise Development
 
-### Phase 0 — Cloud Infrastructure & CI/CD Pipeline
+### Phase 0 -  Cloud Infrastructure & CI/CD Pipeline
 - Containerized environments with Docker and Docker Compose.
 - Automated GitHub Actions CI workflow covering linting, builds, and automated unit tests.
 - Cloud database deployment on Supabase PostgreSQL.
 
-### Phase 1 — Hospital Queue Foundation & Authentication
+### Phase 1 -  Hospital Queue Foundation & Authentication
 - Relational schema covering users, departments, doctors, patients, and queue entries.
 - Role-Based Access Control (RBAC) with JWT tokens for Admins, Doctors, and Receptionists.
 - Core queue generation and sequential progression APIs.
 
-### Phase 2 — Virtual Queue & Cryptographic Patient Pass
+### Phase 2 -  Virtual Queue & Cryptographic Patient Pass
 - Token generation with 128-bit cryptographic hex entropy (`queue_access_token`).
 - Dedicated mobile-friendly outpatient pass route (`/queue/:accessToken`) with zero login requirements.
 - Zero PII exposure on public tracking endpoints (no patient phone numbers, names, or internal IDs).
 
-### Phase 3 — Intelligent Waiting-Time Prediction
+### Phase 3 -  Intelligent Waiting-Time Prediction
 - Python/FastAPI microservice trained on 5,000 empirical healthcare consultation records.
 - Benchmark comparison of four algorithms: Historical Median Baseline, Ridge Regression, Random Forest, and Gradient Boosting Regressor.
 - Dynamic waiting-time estimation with upper and lower bound confidence intervals.
 
-### Phase 4 — Real-Time Intelligent Queue Management
+### Phase 4 -  Real-Time Intelligent Queue Management
 - Bi-directional WebSockets (Socket.IO v4) with strict room isolation.
 - Push alerts for approaching turns (`patientsAhead <= 2`) and turn arrival.
 - State machine enforcement preventing out-of-order queue jumps.
@@ -337,7 +337,7 @@ The prediction engine utilizes a dataset of 5,000 consultation records across fo
 
 1. `token_position`: Sequential position in the daily intake line.
 2. `patients_ahead`: Number of patients currently waiting ahead of this token.
-3. `hour_of_day`: Arrival hour (capturing OPD peak periods, 9:00 AM – 1:00 PM).
+3. `hour_of_day`: Arrival hour (capturing OPD peak periods, 9:00 AM - 1:00 PM).
 4. `day_of_week`: Day of the week (capturing weekday load shifts).
 5. `department_id`: Medical specialty identifier.
 6. `doctor_id`: Physician identifier.
@@ -497,27 +497,27 @@ CREATE TABLE queue_entries (
 ## API Overview
 
 ### Authentication
-- `POST /api/auth/login` — Authenticate staff member with email and password. Returns JWT token and user profile.
-- `GET /api/auth/me` — Verify active session and retrieve authenticated profile.
+- `POST /api/auth/login` -  Authenticate staff member with email and password. Returns JWT token and user profile.
+- `GET /api/auth/me` -  Verify active session and retrieve authenticated profile.
 
 ### Public Virtual Queue
-- `GET /api/queue/access/:accessToken` — Fetch public queue pass (token number, current serving, position ahead, approaching flag, estimated wait time). Zero authentication required.
+- `GET /api/queue/access/:accessToken` -  Fetch public queue pass (token number, current serving, position ahead, approaching flag, estimated wait time). Zero authentication required.
 
 ### Queue Management
-- `GET /api/queue` — List queue entries (filtered by department, doctor, or status).
-- `POST /api/queue/token` — Issue digital token and generate secure 128-bit access pass.
-- `GET /api/queue/doctor/:doctorId` — Fetch current room queue for assigned physician.
-- `POST /api/queue/:id/call` — Advance token to `CALLED`. Emits real-time turn notification.
-- `POST /api/queue/:id/start` — Advance token to `IN_CONSULTATION`. Logs start timestamp and calculates actual waiting duration.
-- `POST /api/queue/:id/complete` — Advance token to `COMPLETED`. Logs completion timestamp and calculates visit duration.
-- `POST /api/queue/:id/no-show` — Mark patient as `NO_SHOW`.
-- `POST /api/queue/:id/cancel` — Cancel queue entry.
+- `GET /api/queue` -  List queue entries (filtered by department, doctor, or status).
+- `POST /api/queue/token` -  Issue digital token and generate secure 128-bit access pass.
+- `GET /api/queue/doctor/:doctorId` -  Fetch current room queue for assigned physician.
+- `POST /api/queue/:id/call` -  Advance token to `CALLED`. Emits real-time turn notification.
+- `POST /api/queue/:id/start` -  Advance token to `IN_CONSULTATION`. Logs start timestamp and calculates actual waiting duration.
+- `POST /api/queue/:id/complete` -  Advance token to `COMPLETED`. Logs completion timestamp and calculates visit duration.
+- `POST /api/queue/:id/no-show` -  Mark patient as `NO_SHOW`.
+- `POST /api/queue/:id/cancel` -  Cancel queue entry.
 
 ### Analytics & AI Telemetry
-- `GET /api/analytics/overview` — Hospital-wide daily KPIs (served, average wait, duration, no-shows).
-- `GET /api/analytics/live-status` — Real-time department load and active status.
-- `GET /api/queue/stats` — Operational summary counts.
-- `GET /api/queue/prediction-metrics` — Machine learning test benchmarks and feature weights.
+- `GET /api/analytics/overview` -  Hospital-wide daily KPIs (served, average wait, duration, no-shows).
+- `GET /api/analytics/live-status` -  Real-time department load and active status.
+- `GET /api/queue/stats` -  Operational summary counts.
+- `GET /api/queue/prediction-metrics` -  Machine learning test benchmarks and feature weights.
 
 ---
 
@@ -525,8 +525,8 @@ CREATE TABLE queue_entries (
 
 | Event Name | Direction | Payload Details |
 |---|---|---|
-| `join:patient` | Client → Server | `{ accessToken }` — Subscribes client to private patient room. |
-| `join:doctor` | Client → Server | `{ doctorId }` — Subscribes physician to room queue updates. |
+| `join:patient` | Client → Server | `{ accessToken }` -  Subscribes client to private patient room. |
+| `join:doctor` | Client → Server | `{ doctorId }` -  Subscribes physician to room queue updates. |
 | `join:admin` | Client → Server | Authenticated staff join operational analytics channel. |
 | `queue.updated` | Server → All | Broadcast indicating queue shift; triggers client state reconciliation. |
 | `queue.token_called` | Server → Patient/Doc | Sent to target patient socket when token is called. |
@@ -755,9 +755,9 @@ This system was conceived and engineered as a **B.Tech Computer Science & Engine
 ## Limitations & Resolved Challenges
 
 - **Initial Cold Start in New Departments [RESOLVED]**: Previously, machine-learning prediction accuracy in newly added departments or doctors was constrained by a lack of historical consultation records. This has been resolved via an empirical **Hierarchical Bayesian Clinical Specialty Prior Engine**:
-  - Encodes evidence-based clinical priors across 14+ medical disciplines (Oncology: 25.0 min, Neurology: 22.0 min, Cardiology: 18.0 min, Orthopedics: 15.0 min, Pediatrics: 13.0 min, General Medicine: 11.5 min, Dermatology: 10.0 min, Emergency: 9.0 min).
-  - Employs 3-tier empirical Bayes shrinkage that automatically transitions as consultations complete ($N = 0 \to N = 1 \to N \ge 3$).
-  - Delivers specialty-differentiated predictions from Patient #1, dynamically scaling tree partition splits while preserving confidence bounds.
+ - Encodes evidence-based clinical priors across 14+ medical disciplines (Oncology: 25.0 min, Neurology: 22.0 min, Cardiology: 18.0 min, Orthopedics: 15.0 min, Pediatrics: 13.0 min, General Medicine: 11.5 min, Dermatology: 10.0 min, Emergency: 9.0 min).
+ - Employs 3-tier empirical Bayes shrinkage that automatically transitions as consultations complete ($N = 0 \to N = 1 \to N \ge 3$).
+ - Delivers specialty-differentiated predictions from Patient #1, dynamically scaling tree partition splits while preserving confidence bounds.
 - **Browser Notification Permissions**: Remote alerts rely on the user granting notification permissions in their mobile browser. If denied, the application falls back to visual in-app badges and audio cues.
 - **Network Disconnection**: Real-time push updates depend on active internet connectivity. In intermittent network scenarios, the client automatically performs REST reconciliation upon reconnection.
 

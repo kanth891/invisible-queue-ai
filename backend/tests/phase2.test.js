@@ -2,7 +2,7 @@ import assert from 'assert';
 import crypto from 'crypto';
 
 // ── Test Mock Logic & Algorithm Validation ──────────────────
-console.log('🧪 Starting Invisible Queue AI — Phase 2 Verification Suite...\n');
+console.log('[TEST] Starting Invisible Queue AI  -  Phase 2 Verification Suite...\n');
 
 // 1. Verify Secure Token Generation
 console.log('Test 1-3: Validating cryptographically secure token generation');
@@ -130,4 +130,4 @@ for (const fk of forbiddenKeys) {
 }
 console.log('✅ PASS: Patient API strictly exposes only non-sensitive public queue tracking fields.');
 
-console.log('\n🎉 ALL PHASE 2 TESTS PASSED SUCCESSFULLY!\n');
+console.log('\n[SUCCESS] ALL PHASE 2 TESTS PASSED SUCCESSFULLY!\n');

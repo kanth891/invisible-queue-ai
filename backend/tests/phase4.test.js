@@ -2,7 +2,7 @@ import assert from 'assert';
 import { io } from 'socket.io-client';
 
 const BASE_URL = 'http://localhost:5000';
-console.log('🧪 Starting Invisible Queue AI — Phase 4 Real-Time & Analytics Verification Suite...\n');
+console.log('[TEST] Starting Invisible Queue AI  -  Phase 4 Real-Time & Analytics Verification Suite...\n');
 
 // ── Helper: Login ──
 async function login(email, password) {
@@ -110,7 +110,7 @@ assert.strictEqual(receivedTurnEvent.token, testEntry.token_number, 'Turn event 
 console.log('✅ PASS: Real-time turn notification pushed instantly to patient socket.\n');
 
 // Test 4: Queue State Machine Validation & Invalid Transition Enforcement
-console.log('Test 4: Queue State Machine — Prevent Invalid Status Transitions');
+console.log('Test 4: Queue State Machine  -  Prevent Invalid Status Transitions');
 // Transition: CALLED -> IN_CONSULTATION
 const startRes = await fetch(`${BASE_URL}/api/queue/${testEntry.id}/start`, {
   method: 'POST',
@@ -174,10 +174,10 @@ assert(overviewData.data.summary, 'Summary metrics must exist');
 assert(typeof overviewData.data.summary.patientsServedToday === 'number', 'Patients served count must be numeric');
 assert(overviewData.data.mlAccuracy, 'ML accuracy object must exist');
 assert(Array.isArray(overviewData.data.departmentPerformance), 'Department performance must be an array');
-console.log(`✅ PASS: Hospital Analytics Overview: ${overviewData.data.summary.patientsServedToday} patients served today, avg wait: ${overviewData.data.summary.avgWaitingTimeMinutes ?? '—'}m\n`);
+console.log(`✅ PASS: Hospital Analytics Overview: ${overviewData.data.summary.patientsServedToday} patients served today, avg wait: ${overviewData.data.summary.avgWaitingTimeMinutes ?? ' - '}m\n`);
 
 // Cleanup sockets
 adminSocket.disconnect();
 unauthSocket.disconnect();
 
-console.log('🎉 ALL PHASE 4 BACKEND & REAL-TIME TESTS PASSED SUCCESSFULLY!\n');
+console.log('[SUCCESS] ALL PHASE 4 BACKEND & REAL-TIME TESTS PASSED SUCCESSFULLY!\n');

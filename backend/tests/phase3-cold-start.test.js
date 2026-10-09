@@ -69,13 +69,13 @@ async function runColdStartTests() {
 
   console.log('   Oncology Prediction (3 ahead):');
   console.log(`     - Predicted Wait: ${oncoPrediction.predicted_wait_minutes} min`);
-  console.log(`     - Bounds:         ${oncoPrediction.lower_bound_minutes}–${oncoPrediction.upper_bound_minutes} min`);
+  console.log(`     - Bounds:         ${oncoPrediction.lower_bound_minutes} to ${oncoPrediction.upper_bound_minutes} min`);
   console.log(`     - Model Version:  ${oncoPrediction.model_version}`);
   console.log(`     - Cold Start:     ${oncoPrediction.is_cold_start}`);
 
   console.log('   Dermatology Prediction (3 ahead):');
   console.log(`     - Predicted Wait: ${dermPrediction.predicted_wait_minutes} min`);
-  console.log(`     - Bounds:         ${dermPrediction.lower_bound_minutes}–${dermPrediction.upper_bound_minutes} min`);
+  console.log(`     - Bounds:         ${dermPrediction.lower_bound_minutes} to ${dermPrediction.upper_bound_minutes} min`);
   console.log(`     - Model Version:  ${dermPrediction.model_version}`);
   console.log(`     - Cold Start:     ${dermPrediction.is_cold_start}`);
 

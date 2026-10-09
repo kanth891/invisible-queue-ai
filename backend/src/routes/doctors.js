@@ -112,6 +112,10 @@ router.post('/', authorize('ADMIN'), async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Name, email, password, and department are required' });
     }
 
+    if (typeof name !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'Name, email, and password must be strings' });
+    }
+
     if (password.length < 6) {
       return res.status(400).json({ status: 'error', message: 'Password must be at least 6 characters' });
     }

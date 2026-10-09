@@ -32,7 +32,7 @@ export function authorize(...roles) {
       return res.status(401).json({ status: 'error', message: 'Authentication required' });
     }
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ status: 'error', message: 'Access denied — insufficient permissions' });
+      return res.status(403).json({ status: 'error', message: 'Access denied: insufficient permissions' });
     }
     next();
   };

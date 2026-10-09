@@ -42,8 +42,8 @@ const VALID_TRANSITIONS = {
  * Format: {DEPT_CODE}-{SEQ} e.g. GM-001, CAR-002
  */
 async function generateToken(client, departmentId, queueDate) {
-  // Get department code
-  const deptResult = await client.query('SELECT code FROM departments WHERE id = $1', [departmentId]);
+  // Get department code with row lock for transaction serialization
+  const deptResult = await client.query('SELECT code FROM departments WHERE id = $1 FOR UPDATE', [departmentId]);
   if (deptResult.rows.length === 0) throw new Error('Department not found');
   const code = deptResult.rows[0].code;
 
@@ -1679,7 +1679,7 @@ router.post('/:id/call', authorize('DOCTOR', 'ADMIN'), async (req, res) => {
       if (activeConsult.rows.length > 0) {
         return res.status(400).json({
           status: 'error',
-          message: 'Cannot call next patient — you have a patient currently in consultation',
+          message: 'Cannot call next patient: you have a patient currently in consultation',
         });
       }
     }

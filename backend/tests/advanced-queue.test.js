@@ -1,7 +1,7 @@
 import assert from 'assert';
 
 console.log('══════════════════════════════════════════════════════════════════');
-console.log('🔬 ADVANCED QUEUE OPERATIONS & DOCTOR AVAILABILITY TEST SUITE');
+console.log('[AUDIT] ADVANCED QUEUE OPERATIONS & DOCTOR AVAILABILITY TEST SUITE');
 console.log('══════════════════════════════════════════════════════════════════\n');
 
 const BASE_URL = 'http://localhost:5000';
@@ -19,7 +19,7 @@ async function runTests() {
     return data.data.token;
   }
 
-  console.log('📌 STEP 1: Staff Authentication');
+  console.log('[STEP] STEP 1: Staff Authentication');
   const adminToken = await login('admin@hospital.com', 'admin123');
   const doctorToken = await login('dr.ravi@hospital.com', 'doctor123');
   const recepToken = await login('receptionist1@hospital.com', 'recep123');
@@ -29,7 +29,7 @@ async function runTests() {
   console.log('   ✓ Admin, Doctor, and Receptionist authenticated\n');
 
   // ── STEP 2: Doctor Availability Today ──
-  console.log('📌 STEP 2: Doctor Availability Resolution');
+  console.log('[STEP] STEP 2: Doctor Availability Resolution');
   const availRes = await fetch(`${BASE_URL}/api/doctors/availability/today`, {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
@@ -42,7 +42,7 @@ async function runTests() {
   console.log(`   ✓ Dr. Ravi availability: ${docRavi.computed_availability} (waiting: ${docRavi.waitingCount})`);
 
   // ── STEP 3: Register New Patient & Token ──
-  console.log('\n📌 STEP 3: Intake Patient & Generate Token');
+  console.log('\n[STEP] STEP 3: Intake Patient & Generate Token');
   const pRes = await fetch(`${BASE_URL}/api/patients`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${recepToken}` },
@@ -65,7 +65,7 @@ async function runTests() {
   console.log(`   ✓ Token generated: ${entry.token_number} with access token ${accessToken.slice(0, 8)}...`);
 
   // ── STEP 4: Patient Queue Access & Digital Pass ──
-  console.log('\n📌 STEP 4: Public Patient Queue Access');
+  console.log('\n[STEP] STEP 4: Public Patient Queue Access');
   const accessRes = await fetch(`${BASE_URL}/api/queue/access/${accessToken}`);
   const accessData = await accessRes.json();
   assert.strictEqual(accessData.status, 'ok');
@@ -79,7 +79,7 @@ async function runTests() {
   console.log('   ✓ Patient pass verified with policy limits and dynamic status');
 
   // ── STEP 5: Call Token and Missed Grace Period Transition ──
-  console.log('\n📌 STEP 5: Call Token & Manual/Grace Missed Workflow');
+  console.log('\n[STEP] STEP 5: Call Token & Manual/Grace Missed Workflow');
   // Call token
   const callRes = await fetch(`${BASE_URL}/api/queue/${entry.id}/call`, {
     method: 'POST',
@@ -107,7 +107,7 @@ async function runTests() {
   console.log('   ✓ Patient pass correctly reports MISSED status with timestamp');
 
   // ── STEP 6: Patient Rejoin Queue ──
-  console.log('\n📌 STEP 6: Patient Self-Service Rejoin');
+  console.log('\n[STEP] STEP 6: Patient Self-Service Rejoin');
   const rejoinRes = await fetch(`${BASE_URL}/api/queue/patient/rejoin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -129,7 +129,7 @@ async function runTests() {
   console.log('   ✓ Rejoining while already in WAITING is rejected with 400');
 
   // ── STEP 7: Patient Reschedule Options & Reschedule ──
-  console.log('\n📌 STEP 7: Same-Day Reschedule Workflow');
+  console.log('\n[STEP] STEP 7: Same-Day Reschedule Workflow');
   const reschedOptionsRes = await fetch(`${BASE_URL}/api/queue/patient/reschedule-options?accessToken=${accessToken}`);
   const reschedOptions = await reschedOptionsRes.json();
   assert.strictEqual(reschedOptions.status, 'ok');
@@ -150,7 +150,7 @@ async function runTests() {
   console.log(`   ✓ Rescheduled successfully to Dr. ${doReschedData.data.newDoctor}`);
 
   // ── STEP 8: Queue Pause and Resume ──
-  console.log('\n📌 STEP 8: Doctor Queue Pause and Resume');
+  console.log('\n[STEP] STEP 8: Doctor Queue Pause and Resume');
   const pauseRes = await fetch(`${BASE_URL}/api/queue/doctor/1/pause`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${doctorToken}` },
@@ -180,7 +180,7 @@ async function runTests() {
   console.log('   ✓ Dr. Ravi queue RESUMED to AVAILABLE');
 
   // ── STEP 9: Doctor Leave Management ──
-  console.log('\n📌 STEP 9: Doctor Leave Management');
+  console.log('\n[STEP] STEP 9: Doctor Leave Management');
   const todayStr = new Date().toISOString().split('T')[0];
   const leaveRes = await fetch(`${BASE_URL}/api/doctors/2/leave`, {
     method: 'POST',
@@ -200,7 +200,7 @@ async function runTests() {
   console.log('   ✓ Doctor availability correctly computes ON_LEAVE');
 
   // ── STEP 10: Queue Reassignment Transfer ──
-  console.log('\n📌 STEP 10: Emergency Queue Transfer');
+  console.log('\n[STEP] STEP 10: Emergency Queue Transfer');
   // Create another patient in Dr. Priya Sharma's queue (Doc 3)
   const p3Res = await (await fetch(`${BASE_URL}/api/queue/token`, {
     method: 'POST',
@@ -219,7 +219,7 @@ async function runTests() {
   console.log(`   ✓ Successfully transferred ${transferData.data.transferredCount} patients from Dr. ${transferData.data.fromDoctor} to Dr. ${transferData.data.toDoctor}`);
 
   // ── STEP 11: Patient Cancel Queue ──
-  console.log('\n📌 STEP 11: Patient Cancel Queue Entry');
+  console.log('\n[STEP] STEP 11: Patient Cancel Queue Entry');
   const cancelRes = await fetch(`${BASE_URL}/api/queue/patient/cancel`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -231,7 +231,7 @@ async function runTests() {
   console.log('   ✓ Patient cancelled queue entry with confirmation');
 
   // ── STEP 12: System Settings & Queue Events Audit ──
-  console.log('\n📌 STEP 12: Policy Settings & Queue Audit Trail');
+  console.log('\n[STEP] STEP 12: Policy Settings & Queue Audit Trail');
   const settingsRes = await fetch(`${BASE_URL}/api/queue/settings`, {
     headers: { Authorization: `Bearer ${adminToken}` }
   });
@@ -247,7 +247,7 @@ async function runTests() {
   assert(eventsData.data.length > 0, 'Audit trail must contain recorded events');
   console.log(`   ✓ Retrieved ${eventsData.data.length} audit trail events covering missed, rejoined, rescheduled, and transferred actions`);
 
-  console.log('\n🎉 ALL ADVANCED QUEUE OPERATIONS TESTS PASSED SUCCESSFULLY!\n');
+  console.log('\n[SUCCESS] ALL ADVANCED QUEUE OPERATIONS TESTS PASSED SUCCESSFULLY!\n');
 }
 
 runTests().catch(err => {

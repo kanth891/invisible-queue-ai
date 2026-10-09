@@ -245,7 +245,7 @@ async function seed(client) {
       ('General Medicine', 'GM',  'General medical consultations and check-ups'),
       ('Cardiology',       'CAR', 'Heart and cardiovascular system treatments'),
       ('Pediatrics',       'PED', 'Medical care for infants, children, and adolescents'),
-      ('Orthopedics',      'ORT', 'Musculoskeletal system — bones, joints, muscles')
+      ('Orthopedics',      'ORT', 'Musculoskeletal system: bones, joints, muscles')
     RETURNING id, name, code
   `);
 

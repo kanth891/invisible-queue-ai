@@ -61,6 +61,10 @@ router.post('/', authorize('ADMIN'), async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Name and code are required' });
     }
 
+    if (typeof name !== 'string' || typeof code !== 'string') {
+      return res.status(400).json({ status: 'error', message: 'Name and code must be strings' });
+    }
+
     if (code.length > 10) {
       return res.status(400).json({ status: 'error', message: 'Code must be 10 characters or less' });
     }

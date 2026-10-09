@@ -1,15 +1,15 @@
 """
-Invisible Queue AI — Outpatient Waiting Time Training & Evaluation Pipeline
+Invisible Queue AI -  Outpatient Waiting Time Training & Evaluation Pipeline
 
 Pipeline steps:
 1. Load dataset (synthetic development data or real historical records)
 2. Feature engineering & validation (zero data leakage)
 3. Chronological Train / Validation / Test split (70% / 15% / 15%)
 4. Train & evaluate:
-   - Baseline Model (Per-doctor historical median duration * patients_ahead)
-   - Model 1: Ridge Regression (L2 Linear)
-   - Model 2: Random Forest Regressor
-   - Model 3: Gradient Boosting Regressor
+  - Baseline Model (Per-doctor historical median duration * patients_ahead)
+  - Model 1: Ridge Regression (L2 Linear)
+  - Model 2: Random Forest Regressor
+  - Model 3: Gradient Boosting Regressor
 5. Compute MAE, RMSE, R² for each model
 6. Derive empirical prediction intervals using validation residuals
 7. Select best model based on validation MAE and stability

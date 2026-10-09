@@ -1,7 +1,7 @@
 {
   "name": "invisible-queue-ai-backend",
   "version": "0.1.0",
-  "description": "Backend API for Invisible Queue AI — Express.js + PostgreSQL",
+  "description": "Backend API for Invisible Queue AI -  Express.js + PostgreSQL",
   "type": "module",
   "main": "src/app.js",
   "scripts": {

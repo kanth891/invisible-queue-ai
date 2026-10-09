@@ -14,6 +14,7 @@ const tests = [
   'phase3-multi-queue-simulation.test.js',
   'phase3-cold-start.test.js',
   'advanced-queue.test.js',
+  'full-system-qa.test.js',
 ];
 
 async function isPortOpen(port) {
@@ -48,7 +49,7 @@ function runScript(scriptPath) {
 }
 
 async function main() {
-  console.log('🚀 Launching Invisible Queue AI Unified Automated Verification Suite...\n');
+  console.log('[START] Launching Invisible Queue AI Unified Automated Verification Suite...\n');
   let serverProcess = null;
 
   const alreadyRunning = await isPortOpen(5000);
@@ -79,7 +80,7 @@ async function main() {
       await runScript(path.join(__dirname, testFile));
     }
     console.log('\n============================================================');
-    console.log('🎉 ALL TEST SUITES COMPLETED AND PASSED WITH ZERO ERRORS!');
+    console.log('[SUCCESS] ALL TEST SUITES COMPLETED AND PASSED WITH ZERO ERRORS!');
     console.log('============================================================\n');
   } catch (err) {
     console.error('\n❌ Test execution failed:', err.message);

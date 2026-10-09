@@ -71,7 +71,7 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
-app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI — API', version: '1.0.0' }));
+app.get('/', (req, res) => res.json({ name: 'Invisible Queue AI - API', version: '1.0.0' }));
 
 // ── Public routes ─────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -105,7 +105,7 @@ app.use(errorHandler);
 initSocket(server, allowedOrigins);
 
 server.listen(PORT, async () => {
-  console.log(`[START] Invisible Queue AI — Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
+  console.log(`[START] Invisible Queue AI - Backend | ${NODE_ENV} | :${PORT} (HTTP + Socket.IO)`);
   if (process.env.DATABASE_URL) {
     const ok = await testConnection();
     if (ok) {

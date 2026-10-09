@@ -371,9 +371,24 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ── Auth Routes ──────────────────────────────────
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ status: 'error', message: 'Authentication required' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ status: 'error', message: 'Access denied: insufficient permissions' });
+    }
+    next();
+  };
+}
+
+// -- Auth Routes ----------------------------------
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
+  if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ status: 'error', message: 'Valid email and password strings are required' });
+  }
   const user = db.users.find(u => u.email === email && u.status === 'ACTIVE');
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ status: 'error', message: 'Invalid email or password' });
@@ -729,6 +744,15 @@ app.get('/api/queue/access/:accessToken/prediction', async (req, res) => {
 
 // ── Departments & Doctors ─────────────────────────
 app.get('/api/departments', (req, res) => res.json({ status: 'ok', data: db.departments }));
+app.post('/api/departments', authMiddleware, requireRole('ADMIN'), (req, res) => {
+  const { name, code, description } = req.body || {};
+  if (!name || !code) {
+    return res.status(400).json({ status: 'error', message: 'Name and code are required' });
+  }
+  const newDept = { id: db.departments.length + 1, name, code: code.toUpperCase(), description: description || '', status: 'ACTIVE' };
+  db.departments.push(newDept);
+  res.status(201).json({ status: 'ok', data: newDept });
+});
 
 app.get('/api/doctors/availability/today', authMiddleware, (req, res) => {
   const today = new Date().toISOString().split('T')[0];
@@ -775,7 +799,7 @@ app.get('/api/doctors/availability/today', authMiddleware, (req, res) => {
 
 app.get('/api/doctors', (req, res) => res.json({ status: 'ok', data: db.doctors }));
 
-app.post('/api/doctors', authMiddleware, (req, res) => {
+app.post('/api/doctors', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const { name, email, department_id, specialization, room_number, daily_capacity } = req.body;
   const newDoc = {
     id: db.doctors.length + 1,
@@ -794,7 +818,7 @@ app.post('/api/doctors', authMiddleware, (req, res) => {
   res.status(201).json({ status: 'ok', data: newDoc });
 });
 
-app.put('/api/doctors/:id', authMiddleware, (req, res) => {
+app.put('/api/doctors/:id', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
   if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
   const { name, department_id, specialization, room_number, daily_capacity } = req.body;
@@ -806,7 +830,7 @@ app.put('/api/doctors/:id', authMiddleware, (req, res) => {
   res.json({ status: 'ok', data: doc });
 });
 
-app.patch('/api/doctors/:id/status', authMiddleware, (req, res) => {
+app.patch('/api/doctors/:id/status', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const doc = db.doctors.find(d => d.id === parseInt(req.params.id, 10));
   if (!doc) return res.status(404).json({ status: 'error', message: 'Doctor not found' });
   doc.status = req.body.status || (doc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE');
@@ -835,10 +859,10 @@ const handleDoctorResume = (req, res) => {
   res.json({ status: 'ok', message: `Queue resumed for Dr. ${doc.name}`, data: doc });
 };
 
-app.post('/api/doctors/:id/pause', authMiddleware, handleDoctorPause);
-app.post('/api/queue/doctor/:id/pause', authMiddleware, handleDoctorPause);
-app.post('/api/doctors/:id/resume', authMiddleware, handleDoctorResume);
-app.post('/api/queue/doctor/:id/resume', authMiddleware, handleDoctorResume);
+app.post('/api/doctors/:id/pause', authMiddleware, requireRole('DOCTOR', 'ADMIN'), handleDoctorPause);
+app.post('/api/queue/doctor/:id/pause', authMiddleware, requireRole('DOCTOR', 'ADMIN'), handleDoctorPause);
+app.post('/api/doctors/:id/resume', authMiddleware, requireRole('DOCTOR', 'ADMIN'), handleDoctorResume);
+app.post('/api/queue/doctor/:id/resume', authMiddleware, requireRole('DOCTOR', 'ADMIN'), handleDoctorResume);
 
 // Doctor schedules
 app.get('/api/doctors/:id/schedule', authMiddleware, (req, res) => {
@@ -846,7 +870,7 @@ app.get('/api/doctors/:id/schedule', authMiddleware, (req, res) => {
   const sched = db.doctor_schedules.filter(s => s.doctor_id === docId);
   res.json({ status: 'ok', data: sched });
 });
-app.put('/api/doctors/:id/schedule', authMiddleware, (req, res) => {
+app.put('/api/doctors/:id/schedule', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const docId = parseInt(req.params.id, 10);
   const items = req.body.schedule || req.body || [];
   db.doctor_schedules = db.doctor_schedules.filter(s => s.doctor_id !== docId);
@@ -862,7 +886,7 @@ app.get('/api/doctors/:id/leave', authMiddleware, (req, res) => {
   const leaves = db.doctor_leaves.filter(l => l.doctor_id === docId);
   res.json({ status: 'ok', data: leaves });
 });
-app.post('/api/doctors/:id/leave', authMiddleware, (req, res) => {
+app.post('/api/doctors/:id/leave', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const docId = parseInt(req.params.id, 10);
   const { leave_date, is_full_day, start_time, end_time, reason } = req.body;
   const newLeave = {
@@ -879,14 +903,14 @@ app.post('/api/doctors/:id/leave', authMiddleware, (req, res) => {
   io.emit('doctor.availability_changed', { doctorId: docId });
   res.status(201).json({ status: 'ok', message: 'Leave recorded', data: newLeave });
 });
-app.delete('/api/doctors/:id/leave/:leaveId', authMiddleware, (req, res) => {
+app.delete('/api/doctors/:id/leave/:leaveId', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const leaveId = parseInt(req.params.leaveId, 10);
   db.doctor_leaves = db.doctor_leaves.filter(l => l.id !== leaveId);
   res.json({ status: 'ok', message: 'Leave removed' });
 });
 
 // Queue Transfer
-app.post('/api/queue/transfer', authMiddleware, (req, res) => {
+app.post('/api/queue/transfer', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const fromDocId = parseInt(req.body.fromDoctorId || req.body.from_doctor_id, 10);
   const toDocId = parseInt(req.body.toDoctorId || req.body.to_doctor_id, 10);
   const reason = req.body.reason || 'Physician unavailable';
@@ -927,10 +951,10 @@ app.post('/api/queue/transfer', authMiddleware, (req, res) => {
 });
 
 // Settings & Events
-app.get('/api/queue/settings', authMiddleware, (req, res) => {
+app.get('/api/queue/settings', authMiddleware, requireRole('ADMIN'), (req, res) => {
   res.json({ status: 'ok', data: db.system_settings });
 });
-app.put('/api/queue/settings', authMiddleware, (req, res) => {
+app.put('/api/queue/settings', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const newSettings = req.body.settings || req.body;
   db.system_settings = { ...db.system_settings, ...newSettings };
   res.json({ status: 'ok', message: 'Settings updated', data: db.system_settings });
@@ -939,10 +963,10 @@ app.get('/api/queue/events', authMiddleware, (req, res) => {
   res.json({ status: 'ok', data: db.queue_events.slice().reverse() });
 });
 
-app.get('/api/users', authMiddleware, (req, res) => res.json({ status: 'ok', data: db.users }));
+app.get('/api/users', authMiddleware, requireRole('ADMIN'), (req, res) => res.json({ status: 'ok', data: db.users }));
 
 // ── Patients ──────────────────────────────────────
-app.post('/api/patients', authMiddleware, (req, res) => {
+app.post('/api/patients', authMiddleware, requireRole('ADMIN', 'RECEPTIONIST'), (req, res) => {
   const { name, age, gender, phone } = req.body;
   const newPatient = { id: db.patients.length + 1, name, age: parseInt(age), gender, phone };
   db.patients.push(newPatient);
@@ -950,7 +974,7 @@ app.post('/api/patients', authMiddleware, (req, res) => {
 });
 
 // ── Queue Management ──────────────────────────────
-app.post('/api/queue/token', authMiddleware, async (req, res) => {
+app.post('/api/queue/token', authMiddleware, requireRole('ADMIN', 'RECEPTIONIST'), async (req, res) => {
   const { patient_id, doctor_id, department_id } = req.body;
   const patient = db.patients.find(p => p.id === parseInt(patient_id));
   const doctor = db.doctors.find(d => d.id === parseInt(doctor_id));
@@ -1128,7 +1152,7 @@ function transitionEntry(id, targetStatus) {
 }
 
 // ── Queue Actions (Doctor / Receptionist) ─────────
-app.post('/api/queue/:id/call', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/call', authMiddleware, requireRole('DOCTOR', 'ADMIN'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'CALLED');
     res.json({ status: 'ok', message: 'Patient called', data: updated });
@@ -1137,7 +1161,7 @@ app.post('/api/queue/:id/call', authMiddleware, (req, res) => {
   }
 });
 
-app.post('/api/queue/:id/missed', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/missed', authMiddleware, requireRole('DOCTOR', 'ADMIN'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'MISSED');
     res.json({ status: 'ok', message: 'Token marked as missed', data: updated });
@@ -1146,7 +1170,7 @@ app.post('/api/queue/:id/missed', authMiddleware, (req, res) => {
   }
 });
 
-app.post('/api/queue/:id/start', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/start', authMiddleware, requireRole('DOCTOR', 'ADMIN'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'IN_CONSULTATION');
     res.json({ status: 'ok', message: 'Consultation started', data: updated });
@@ -1155,7 +1179,7 @@ app.post('/api/queue/:id/start', authMiddleware, (req, res) => {
   }
 });
 
-app.post('/api/queue/:id/complete', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/complete', authMiddleware, requireRole('DOCTOR', 'ADMIN'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'COMPLETED');
     res.json({ status: 'ok', message: 'Consultation completed', data: updated });
@@ -1164,7 +1188,7 @@ app.post('/api/queue/:id/complete', authMiddleware, (req, res) => {
   }
 });
 
-app.post('/api/queue/:id/no-show', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/no-show', authMiddleware, requireRole('DOCTOR', 'ADMIN', 'RECEPTIONIST'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'NO_SHOW');
     res.json({ status: 'ok', message: 'Marked as no-show', data: updated });
@@ -1173,7 +1197,7 @@ app.post('/api/queue/:id/no-show', authMiddleware, (req, res) => {
   }
 });
 
-app.post('/api/queue/:id/cancel', authMiddleware, (req, res) => {
+app.post('/api/queue/:id/cancel', authMiddleware, requireRole('ADMIN', 'RECEPTIONIST'), (req, res) => {
   try {
     const updated = transitionEntry(req.params.id, 'CANCELLED');
     res.json({ status: 'ok', message: 'Queue entry cancelled', data: updated });
@@ -1183,7 +1207,7 @@ app.post('/api/queue/:id/cancel', authMiddleware, (req, res) => {
 });
 
 // ── Phase 4 Analytics Endpoints ───────────────────
-app.get('/api/analytics/live-status', authMiddleware, (req, res) => {
+app.get('/api/analytics/live-status', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const liveDepartments = db.departments.map(dept => {
     const deptEntries = db.queue_entries.filter(q => q.department_id === dept.id);
     const waiting = deptEntries.filter(e => e.status === 'WAITING').length;
@@ -1199,7 +1223,7 @@ app.get('/api/analytics/live-status', authMiddleware, (req, res) => {
       name: dept.name,
       code: dept.code,
       status: (waiting + called + consulting > 0) ? 'Active' : 'Idle',
-      currentlyServing: serving ? serving.token_number : '—',
+      currentlyServing: serving ? serving.token_number : '-',
       waitingCount: waiting,
       consultingCount: consulting,
       completedCount: completed,
@@ -1210,7 +1234,7 @@ app.get('/api/analytics/live-status', authMiddleware, (req, res) => {
   res.json({ status: 'ok', data: liveDepartments, timestamp: new Date().toISOString() });
 });
 
-app.get('/api/analytics/overview', authMiddleware, (req, res) => {
+app.get('/api/analytics/overview', authMiddleware, requireRole('ADMIN'), (req, res) => {
   const completed = db.queue_entries.filter(q => q.status === 'COMPLETED');
   const waiting = db.queue_entries.filter(q => q.status === 'WAITING');
   const inConsult = db.queue_entries.filter(q => q.status === 'IN_CONSULTATION');
@@ -1272,7 +1296,7 @@ app.get('/api/analytics/overview', authMiddleware, (req, res) => {
   });
 });
 
-app.get('/api/queue/admin/prediction-metrics', authMiddleware, (req, res) => {
+app.get('/api/queue/admin/prediction-metrics', authMiddleware, requireRole('ADMIN'), (req, res) => {
   res.json({
     status: 'ok',
     data: {

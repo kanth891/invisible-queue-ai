@@ -52,7 +52,7 @@ router.get('/live-status', authorize('ADMIN'), async (req, res) => {
         name: dept.name,
         code: dept.code,
         status: (waiting + called + consulting > 0) ? 'Active' : 'Idle',
-        currentlyServing: serving ? serving.token_number : '—',
+        currentlyServing: serving ? serving.token_number : '-',
         waitingCount: waiting,
         consultingCount: consulting,
         completedCount: completed,

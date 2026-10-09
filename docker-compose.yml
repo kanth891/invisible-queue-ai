@@ -1,8 +1,8 @@
 # ──────────────────────────────────────────────────
-# Invisible Queue AI — Docker Compose
+# Invisible Queue AI -  Docker Compose
 # ──────────────────────────────────────────────────
 # Local development setup.
-# Supabase PostgreSQL is external — NOT containerized.
+# Supabase PostgreSQL is external -  NOT containerized.
 #
 # Usage:
 #   docker compose up --build
@@ -17,13 +17,13 @@ services:
       dockerfile: Dockerfile
     container_name: iq-backend
     ports:
-      - "5000:5000"
+     - "5000:5000"
     env_file:
-      - .env
+     - .env
     environment:
-      - NODE_ENV=production
-      - PORT=5000
-      - ML_SERVICE_URL=http://ml-service:8000
+     - NODE_ENV=production
+     - PORT=5000
+     - ML_SERVICE_URL=http://ml-service:8000
     depends_on:
       ml-service:
         condition: service_healthy
@@ -42,9 +42,9 @@ services:
       dockerfile: Dockerfile
     container_name: iq-ml-service
     ports:
-      - "8000:8000"
+     - "8000:8000"
     environment:
-      - PORT=8000
+     - PORT=8000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -59,10 +59,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=http://localhost:5000
+       - VITE_API_URL=http://localhost:5000
     container_name: iq-frontend
     ports:
-      - "3000:80"
+     - "3000:80"
     depends_on:
       backend:
         condition: service_healthy

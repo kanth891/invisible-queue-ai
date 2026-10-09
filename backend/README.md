@@ -1,4 +1,4 @@
-# Invisible Queue AI — Backend
+# Invisible Queue AI -  Backend
 
 Express.js API server for the Invisible Queue AI hospital management system.
 
